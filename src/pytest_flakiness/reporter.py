@@ -9,7 +9,7 @@ import mimetypes
 import hashlib
 
 from pathlib import Path
-from typing import NewType, cast, Any, TypedDict
+from typing import NewType, cast, Any, TypedDict, List
 
 # Import your types from the sibling file
 from .flakiness_report import (
@@ -174,6 +174,35 @@ class Reporter:
 
         return fk_error
 
+    def extract_test_location(self, report: pytest.TestReport) -> Location | None:
+        # report.location is Tuple[str, int, str] -> (file, line-0, domain)
+        fspath, lineno, _ = report.location
+        fspath = self.normalize_path(fspath)
+
+        if fspath is not None and lineno is not None:
+            return {
+                "file": GitFilePath(str(fspath)),
+                "line": Number1Based(lineno + 1),
+                "column": Number1Based(1),
+            }
+        return None
+
+    def extract_test_tags(self, report: pytest.TestReport) -> List[str] | None:
+        markers = getattr(report, "flakiness_injected_markers", [])
+
+        IGNORED_MARKERS = {
+            "parametrize",
+            "usefixtures",
+            "filterwarnings",
+            "skip",
+            "xfail",
+        }
+        tags: List[str] = []
+        for marker in markers:
+            if marker not in IGNORED_MARKERS:
+                tags.append(marker)
+        return tags or None
+
     def normalize_path(self, fspath: str) -> NormalizedPath | None:
         """
         Converts a pytest-relative path to a git-root-relative path.
@@ -210,46 +239,18 @@ class Reporter:
             int(time.time() * 1000) - duration_ms
         )
 
+        markers = getattr(report, "flakiness_injected_markers", [])
         current_status: TestStatus = report.outcome
-
-        # Determine expectation (xfail handling)
         expected_status: TestStatus = "passed"
-        if hasattr(report, "wasxfail"):
+        if "xfail" in markers:
             expected_status = "failed"
-        if report.outcome == "skipped":
+        elif "skip" in markers:
             expected_status = "skipped"
-
-        # Location parsing
-        # report.location is Tuple[str, int, str] -> (file, line-0, domain)
-        fspath, lineno, _ = report.location
-        fspath = self.normalize_path(fspath)
-        location: Location | None = None
-
-        if fspath is not None and lineno is not None:
-            location = {
-                "file": GitFilePath(str(fspath)),
-                "line": Number1Based(lineno + 1),
-                "column": Number1Based(1),
-            }
 
         # Parse user properties
         annotations, file_attachments = self.parse_user_properties(report)
         for file_attachment in file_attachments:
             self.file_attachments[file_attachment["id"]] = file_attachment
-
-        # 1. Get the tags we injected earlier
-        # Use getattr because setup/teardown reports might not have it set
-        IGNORED_MARKERS = {
-            "parametrize",
-            "usefixtures",
-            "filterwarnings",
-            "skip",
-            "xfail",
-        }
-        tags = []
-        for marker in getattr(report, "flakiness_injected_markers", []):
-            if marker not in IGNORED_MARKERS:
-                tags.append(marker)
 
         # 2. Build Attempt
         attempt: RunAttempt = {
@@ -279,9 +280,9 @@ class Reporter:
         if nodeid not in self.tests:
             self.tests[nodeid] = {
                 "title": self.parse_test_title(nodeid),
-                "location": location,
+                "location": self.extract_test_location(report),
+                "tags": self.extract_test_tags(report),
                 "attempts": [],
-                "tags": tags,
             }
         self.tests[nodeid]["attempts"].append(attempt)
 
