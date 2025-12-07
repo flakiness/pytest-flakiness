@@ -62,6 +62,33 @@ To ensure reports are uploaded during your CI runs, map the secret in your workf
   run: uv run pytest
 ```
 
+## 🛠️ Development Setup
+
+This project uses `uv` for dependency management and `pre-commit` for code quality checks.
+
+### 1. Install Dependencies
+Ensure you have [uv](https://github.com/astral-sh/uv) installed, then run:
+
+```bash
+uv sync
+```
+
+### 2\. Enable Git Hooks
+
+This project uses `ruff` (formatting/linting) and `pyright` (type checking) as pre-commit hooks. You must install the git hooks to ensure checks run automatically before you commit:
+
+```bash
+uv run pre-commit install
+```
+
+### 3\. (Optional) Run Checks Manually
+
+You can trigger the full suite of checks on all files at any time:
+
+```bash
+uv run pre-commit run --all-files
+```
+
 ## License
 
 MIT
