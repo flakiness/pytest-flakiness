@@ -1,0 +1,14 @@
+[project]
+name = "pytest-flakiness"
+version = "0.1.0"
+description = "Pytest reporter for Flakiness.io"
+readme = "README.md"
+authors = [
+    { name = "Andrey Lushnikov", email = "aslushnikov@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.9.16,<0.10.0"]
+build-backend = "uv_build"
