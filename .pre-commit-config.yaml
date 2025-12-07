@@ -1,0 +1,29 @@
+repos:
+  - repo: local
+    hooks:
+      # 1. Format (Ruff)
+      - id: ruff-format
+        name: Ruff Format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      # 2. Lint (Ruff)
+      - id: ruff-check
+        name: Ruff Check
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+        pass_filenames: true
+
+      # 3. Type Check (Pyright)
+      - id: pyright
+        name: Pyright
+        # We run on the current directory (.) so it finds pyproject.toml
+        entry: uv run pyright .
+        language: system
+        types: [python]
+        # Important: set to false. Pyright needs to scan the whole 
+        # project graph to ensure imports aren't broken.
+        pass_filenames: false
