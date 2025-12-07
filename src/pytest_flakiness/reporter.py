@@ -1,20 +1,31 @@
-import os
 import time
 import json
 import pytest
 from _pytest._code.code import ReprFileLocation, ReprTraceback
-import requests
 import platform
-import subprocess
 import sys
 
 from pathlib import Path
-from typing import Dict, TypedDict, Literal, NewType, cast
+from typing import NewType, cast, Any
+
 # Import your types from the sibling file
-from .flakiness_report import *
+from .flakiness_report import (
+    CommitId,
+    DurationMS,
+    UnixTimestampMS,
+    ReportError,
+    FlakinessReport,
+    GitFilePath,
+    Number1Based,
+    TestStatus,
+    RunAttempt,
+    Environment,
+    Location,
+)
 
 # This behaves like a string at runtime, but type checkers treat it as distinct
 NormalizedPath = NewType("NormalizedPath", str)
+
 
 class Reporter:
     def __init__(self, commit_id: str, git_root: Path, pytest_root: Path):
@@ -24,7 +35,7 @@ class Reporter:
         self.start_time = int(time.time() * 1000)
         self.tests = {}
 
-    def parse_pytest_error(self, report: pytest.TestReport) -> ReportError|None:
+    def parse_pytest_error(self, report: pytest.TestReport) -> ReportError | None:
         """
         Extracts rich error data from the pytest report.
         """
@@ -53,8 +64,8 @@ class Reporter:
                 fk_error["location"] = {
                     "file": GitFilePath(str(self.normalize_path(crash.path))),
                     # Safety: lineno might be None in some rare crash objects
-                    "line": Number1Based((crash.lineno or 0) + 1), 
-                    "column": Number1Based(0)
+                    "line": Number1Based((crash.lineno or 0) + 1),
+                    "column": Number1Based(0),
                 }
 
         if hasattr(longrepr, "reprtraceback") and longrepr.reprtraceback:
@@ -68,7 +79,7 @@ class Reporter:
 
         return fk_error
 
-    def normalize_path(self, fspath: str) -> NormalizedPath|None:
+    def normalize_path(self, fspath: str) -> NormalizedPath | None:
         """
         Converts a pytest-relative path to a git-root-relative path.
         """
@@ -92,7 +103,7 @@ class Reporter:
     @pytest.hookimpl(tryfirst=True)
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
         """
-        Called for setup, call, and teardown. 
+        Called for setup, call, and teardown.
         """
         # Filter out setup/teardown unless they failed
         if report.when != "call" and not (report.when == "setup" and report.failed):
@@ -100,7 +111,9 @@ class Reporter:
 
         # 1. Prepare Data
         duration_ms: DurationMS = DurationMS(int(report.duration * 1000))
-        start_ts: UnixTimestampMS = UnixTimestampMS(int(time.time() * 1000) - duration_ms)
+        start_ts: UnixTimestampMS = UnixTimestampMS(
+            int(time.time() * 1000) - duration_ms
+        )
 
         current_status: TestStatus = report.outcome
 
@@ -121,7 +134,7 @@ class Reporter:
             location = {
                 "file": GitFilePath(str(fspath)),
                 "line": Number1Based(lineno + 1),
-                "column": Number1Based(1)
+                "column": Number1Based(1),
             }
 
         # 2. Build Attempt
@@ -131,7 +144,7 @@ class Reporter:
             "status": current_status,
             "startTimestamp": start_ts,
             "duration": duration_ms,
-            "errors": []
+            "errors": [],
         }
 
         error = self.parse_pytest_error(report)
@@ -141,10 +154,10 @@ class Reporter:
         nodeid = report.nodeid
         if nodeid not in self.tests:
             self.tests[nodeid] = {
-                "title": nodeid, 
+                "title": nodeid,
                 "location": location,
                 "attempts": [],
-                "tags": [] 
+                "tags": [],
             }
         self.tests[nodeid]["attempts"].append(attempt)
 
@@ -162,14 +175,12 @@ class Reporter:
                 "osVersion": platform.release(),
                 "osArch": platform.machine(),
             },
-            "userSuppliedData": {
-                "python_version": sys.version
-            }
+            "userSuppliedData": {"python_version": sys.version},
         }
 
         # 2. Build Final Report
         end_time = int(time.time() * 1000)
-        
+
         # Cast strictly to the FlakinessReport TypedDict
         report_payload: FlakinessReport = {
             "category": "pytest",
@@ -187,10 +198,10 @@ class Reporter:
         try:
             with open(output_file, "w", encoding="utf-8") as f:
                 json.dump(
-                    report_payload, 
-                    f, 
+                    report_payload,
+                    f,
                     indent=2,
-                    default=str # Safe fallback: convert any non-serializable objects (like Path) to strings
+                    default=str,  # Safe fallback: convert any non-serializable objects (like Path) to strings
                 )
         except Exception as e:
             print(f"❌ Failed to write report: {e}")
