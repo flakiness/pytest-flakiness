@@ -35,6 +35,20 @@ class Reporter:
         self.start_time = int(time.time() * 1000)
         self.tests = {}
 
+    def parse_test_title(self, nodeid: str):
+        """
+        Removes the filename from the nodeid.
+        Input:  "tests/api/test_users.py::TestLogin::test_success"
+        Output: "TestLogin::test_success"
+
+        Input:  "test_simple.py::test_add"
+        Output: "test_add"
+        """
+        parts = nodeid.split("::", 1)
+        if len(parts) > 1:
+            return parts[1]
+        return nodeid  # Fallback (shouldn't happen for valid tests)
+
     def parse_pytest_error(self, report: pytest.TestReport) -> ReportError | None:
         """
         Extracts rich error data from the pytest report.
@@ -154,7 +168,7 @@ class Reporter:
         nodeid = report.nodeid
         if nodeid not in self.tests:
             self.tests[nodeid] = {
-                "title": nodeid,
+                "title": self.parse_test_title(nodeid),
                 "location": location,
                 "attempts": [],
                 "tags": [],
