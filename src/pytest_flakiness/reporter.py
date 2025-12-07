@@ -5,13 +5,17 @@ from _pytest._code.code import ReprFileLocation, ReprTraceback
 import platform
 import sys
 import shutil
+import mimetypes
+import hashlib
 
 from pathlib import Path
-from typing import NewType, cast, Any
+from typing import NewType, cast, Any, TypedDict
 
 # Import your types from the sibling file
 from .flakiness_report import (
+    Annotation,
     CommitId,
+    AttachmentId,
     DurationMS,
     UnixTimestampMS,
     ReportError,
@@ -24,8 +28,29 @@ from .flakiness_report import (
     Location,
 )
 
+
+class FileAttachment(TypedDict):
+    """Reference to a file attachment"""
+
+    contentType: str
+    id: AttachmentId
+    path: Path
+
+
 # This behaves like a string at runtime, but type checkers treat it as distinct
 NormalizedPath = NewType("NormalizedPath", str)
+
+
+def _calculate_file_hash(path: Path) -> str:
+    """
+    Calculates the MD5 hash of a file efficiently.
+    """
+    hasher = hashlib.md5()
+    with open(path, "rb") as f:
+        # Read in 64kb chunks to be memory efficient
+        for chunk in iter(lambda: f.read(65536), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
 
 
 class Reporter:
@@ -34,7 +59,62 @@ class Reporter:
         self.pytest_root = pytest_root
         self.commit_id = CommitId(commit_id)
         self.start_time = int(time.time() * 1000)
+        self.file_attachments: dict[str, FileAttachment] = {}
         self.tests = {}
+
+    def parse_user_properties(
+        self, report: pytest.TestReport
+    ) -> tuple[list[Annotation], list[FileAttachment]]:
+        """
+        Splits generic pytest properties into (Annotations, Attachments).
+        """
+        annotations: list[Annotation] = []
+        attachments: list[FileAttachment] = []
+
+        # report.user_properties is a list of tuples: [("key", "value"), ...]
+        for key, value in report.user_properties:
+            # We only care about strings for paths.
+            # (record_property can technically take numbers/objects)
+            if not isinstance(value, str):
+                continue
+
+            is_likely_attachment = key.endswith(
+                ("_path", "_file", "_img", "_screenshot", "_video")
+            ) or key.startswith("attachment_")
+
+            # We use try/except because 'value' might be "invalid\path" chars
+            try:
+                path_obj = Path(value)
+                # Heuristic: It must exist, be a file, and be absolute
+                # (or relative to cwd, which Path handles)
+                if path_obj.is_file() and is_likely_attachment:
+                    # mimetypes.guess_type returns (type, encoding)
+                    mime_type, _ = mimetypes.guess_type(path_obj)
+                    # Fallback if unknown
+                    if mime_type is None:
+                        mime_type = "application/octet-stream"
+
+                    file_hash = _calculate_file_hash(path_obj)
+                    attachments.append(
+                        {
+                            "contentType": mime_type,
+                            "id": AttachmentId(file_hash),
+                            "path": path_obj,
+                        }
+                    )
+                    continue
+            except (OSError, ValueError):
+                pass  # Not a path, treat as normal string
+
+            # Fallback: It's just an annotation
+            annotations.append(
+                {
+                    "type": key,
+                    "description": value,
+                }
+            )
+
+        return annotations, attachments
 
     def parse_test_title(self, nodeid: str):
         """
@@ -152,6 +232,11 @@ class Reporter:
                 "column": Number1Based(1),
             }
 
+        # Parse user properties
+        annotations, file_attachments = self.parse_user_properties(report)
+        for file_attachment in file_attachments:
+            self.file_attachments[file_attachment["id"]] = file_attachment
+
         # 2. Build Attempt
         attempt: RunAttempt = {
             "environmentIdx": 0,
@@ -160,6 +245,16 @@ class Reporter:
             "startTimestamp": start_ts,
             "duration": duration_ms,
             "errors": [],
+            "annotations": annotations,
+            "attachments": [
+                {
+                    # Extract filename from the Path object (e.g., "test_fail.png")
+                    "name": fa["path"].name,
+                    "contentType": fa["contentType"],
+                    "id": fa["id"],
+                }
+                for fa in file_attachments
+            ],
         }
 
         error = self.parse_pytest_error(report)
@@ -184,7 +279,7 @@ class Reporter:
 
         # 1. Build Environment
         environment: Environment = {
-            "name": "pytest-host",
+            "name": "pytest",
             "systemData": {
                 "osName": platform.system(),
                 "osVersion": platform.release(),
@@ -222,3 +317,20 @@ class Reporter:
                 )
         except Exception as e:
             print(f"❌ Failed to write report: {e}")
+
+        attachments_dir = output_dir / "attachments"
+        attachments_dir.mkdir(exist_ok=True)
+        for attachment_id, attachment_data in self.file_attachments.items():
+            source_path = attachment_data["path"]
+            # The filename is exactly the ID (as requested)
+            destination_path = attachments_dir / attachment_id
+            try:
+                if source_path.exists():
+                    # copy2 preserves timestamps and metadata
+                    shutil.copy2(source_path, destination_path)
+                else:
+                    print(
+                        f"⚠️ Warning: Source file for attachment {source_path.name} is missing at {source_path}"
+                    )
+            except OSError as e:
+                print(f"❌ Failed to copy attachment {attachment_id}: {e}")
