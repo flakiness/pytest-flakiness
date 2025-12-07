@@ -7,11 +7,19 @@ authors = [
     { name = "Andrey Lushnikov", email = "aslushnikov@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "pytest>=9.0.2",
+    "requests>=2.32.5",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.16,<0.10.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pyright>=1.1.407",
+]
 
 [project.entry-points.pytest11]
 flakiness = "pytest_flakiness.plugin"
