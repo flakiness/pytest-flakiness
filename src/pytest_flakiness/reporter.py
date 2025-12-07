@@ -237,6 +237,20 @@ class Reporter:
         for file_attachment in file_attachments:
             self.file_attachments[file_attachment["id"]] = file_attachment
 
+        # 1. Get the tags we injected earlier
+        # Use getattr because setup/teardown reports might not have it set
+        IGNORED_MARKERS = {
+            "parametrize",
+            "usefixtures",
+            "filterwarnings",
+            "skip",
+            "xfail",
+        }
+        tags = []
+        for marker in getattr(report, "flakiness_injected_markers", []):
+            if marker not in IGNORED_MARKERS:
+                tags.append(marker)
+
         # 2. Build Attempt
         attempt: RunAttempt = {
             "environmentIdx": 0,
@@ -267,7 +281,7 @@ class Reporter:
                 "title": self.parse_test_title(nodeid),
                 "location": location,
                 "attempts": [],
-                "tags": [],
+                "tags": tags,
             }
         self.tests[nodeid]["attempts"].append(attempt)
 
