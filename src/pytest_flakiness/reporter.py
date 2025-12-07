@@ -4,6 +4,7 @@ import pytest
 from _pytest._code.code import ReprFileLocation, ReprTraceback
 import platform
 import sys
+import shutil
 
 from pathlib import Path
 from typing import NewType, cast, Any
@@ -207,6 +208,8 @@ class Reporter:
         }
 
         output_dir = Path.cwd() / "flakiness-report"
+        if output_dir.exists():
+            shutil.rmtree(output_dir, ignore_errors=True)
         output_dir.mkdir(parents=True, exist_ok=True)
         output_file = output_dir / "report.json"
         try:
