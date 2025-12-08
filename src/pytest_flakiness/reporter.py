@@ -71,7 +71,6 @@ class Reporter:
         annotations: list[Annotation] = []
         attachments: list[FileAttachment] = []
 
-        # report.user_properties is a list of tuples: [("key", "value"), ...]
         for key, value in report.user_properties:
             # We only care about strings for paths.
             # (record_property can technically take numbers/objects)
@@ -174,10 +173,8 @@ class Reporter:
 
         return fk_error
 
-    def extract_test_location(self, report: pytest.TestReport) -> Location | None:
-        # report.location is Tuple[str, int, str] -> (file, line-0, domain)
-        fspath, lineno, _ = report.location
-        fspath = self.normalize_path(fspath)
+    def as_location(self, raw_path: str, lineno: int | None) -> Location | None:
+        fspath = self.normalize_path(raw_path)
 
         if fspath is not None and lineno is not None:
             return {
@@ -229,8 +226,16 @@ class Reporter:
         """
         Called for setup, call, and teardown.
         """
-        # Filter out setup/teardown unless they failed
-        if report.when != "call" and not (report.when == "setup" and report.failed):
+
+        # 1. Always capture the actual test execution ('call')
+        is_call = report.when == "call"
+
+        # 2. Capture Setup ONLY if it failed or if the test was skipped there
+        is_relevant_setup = report.when == "setup" and (report.failed or report.skipped)
+
+        # 3. Drop everything else (successful setups, teardowns)
+
+        if not is_call and not is_relevant_setup:
             return
 
         # 1. Prepare Data
@@ -251,6 +256,22 @@ class Reporter:
         annotations, file_attachments = self.parse_user_properties(report)
         for file_attachment in file_attachments:
             self.file_attachments[file_attachment["id"]] = file_attachment
+
+        # Add "Skip" reason as an annotation
+        if report.outcome == "skipped":
+            # Pytest stores the skip reason in longrepr usually as a tuple or string
+            annotation: Annotation = {
+                "type": "skip",
+            }
+            if isinstance(report.longrepr, tuple):
+                # (file, line, reason)
+                annotation["description"] = report.longrepr[2]
+                location = self.as_location(report.longrepr[0], report.longrepr[1])
+                if location is not None:
+                    annotation["location"] = location
+            elif isinstance(report.longrepr, str):
+                annotation["description"] = report.longrepr
+            annotations.append(annotation)
 
         # 2. Build Attempt
         attempt: RunAttempt = {
@@ -280,7 +301,7 @@ class Reporter:
         if nodeid not in self.tests:
             self.tests[nodeid] = {
                 "title": self.parse_test_title(nodeid),
-                "location": self.extract_test_location(report),
+                "location": self.as_location(report.location[0], report.location[1]),
                 "tags": self.extract_test_tags(report),
                 "attempts": [],
             }
