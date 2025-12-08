@@ -6,9 +6,10 @@ import platform
 import shutil
 import mimetypes
 import hashlib
+import os
 
 from pathlib import Path
-from typing import NewType, cast, Any, TypedDict
+from typing import NewType, cast, Any, TypedDict, Dict
 
 # Import your types from the sibling file
 from .flakiness_report import (
@@ -320,7 +321,7 @@ class Reporter:
                 "osVersion": platform.release(),
                 "osArch": platform.machine(),
             },
-            "userSuppliedData": {"python_version": platform.python_version()},
+            "userSuppliedData": create_user_data(),
         }
 
         # 2. Build Final Report
@@ -377,3 +378,17 @@ def _write_report(
                 )
         except OSError as e:
             print(f"❌ Failed to copy attachment {attachment_id}: {e}")
+
+
+def create_user_data() -> Dict[str, Any]:
+    user_data: Dict[str, Any] = {
+        "python_version": platform.python_version(),
+    }
+
+    prefix = "FK_ENV_"
+    for key, value in os.environ.items():
+        if key.startswith(prefix):
+            # Remove the prefix (e.g. FK_ENV_FOO -> FOO)
+            clean_key = key[len(prefix) :].lower()
+            user_data[clean_key] = value
+    return user_data
