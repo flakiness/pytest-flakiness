@@ -25,6 +25,7 @@ from .flakiness_report import (
     RunAttempt,
     Environment,
     Location,
+    STDIOEntry,
 )
 
 
@@ -127,6 +128,17 @@ class Reporter:
         if len(parts) > 1:
             return parts[1]
         return nodeid  # Fallback (shouldn't happen for valid tests)
+
+    def _extract_stdio(self, content: str) -> list[STDIOEntry]:
+        """
+        Converts captured string content into the schema format.
+        """
+        if not content:
+            return []
+
+        # We assume text for standard print().
+        # If you needed binary checks, you'd handle "buffer" here.
+        return [{"text": content}]
 
     def parse_pytest_error(self, report: pytest.TestReport) -> ReportError | None:
         """
@@ -266,6 +278,8 @@ class Reporter:
             "startTimestamp": start_ts,
             "duration": duration_ms,
             "errors": [],
+            "stdout": self._extract_stdio(report.capstdout),
+            "stderr": self._extract_stdio(report.capstderr),
             "annotations": annotations,
             "attachments": [
                 {
