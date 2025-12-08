@@ -338,34 +338,42 @@ class Reporter:
         }
 
         output_dir = Path.cwd() / "flakiness-report"
-        if output_dir.exists():
-            shutil.rmtree(output_dir, ignore_errors=True)
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = output_dir / "report.json"
-        try:
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(
-                    report_payload,
-                    f,
-                    indent=2,
-                    default=str,  # Safe fallback: convert any non-serializable objects (like Path) to strings
-                )
-        except Exception as e:
-            print(f"❌ Failed to write report: {e}")
+        _write_report(report_payload, self.file_attachments, output_dir)
 
-        attachments_dir = output_dir / "attachments"
-        attachments_dir.mkdir(exist_ok=True)
-        for attachment_id, attachment_data in self.file_attachments.items():
-            source_path = attachment_data["path"]
-            # The filename is exactly the ID (as requested)
-            destination_path = attachments_dir / attachment_id
-            try:
-                if source_path.exists():
-                    # copy2 preserves timestamps and metadata
-                    shutil.copy2(source_path, destination_path)
-                else:
-                    print(
-                        f"⚠️ Warning: Source file for attachment {source_path.name} is missing at {source_path}"
-                    )
-            except OSError as e:
-                print(f"❌ Failed to copy attachment {attachment_id}: {e}")
+
+def _write_report(
+    report_payload: FlakinessReport,
+    file_attachments: dict[str, FileAttachment],
+    output_dir: Path,
+):
+    if output_dir.exists():
+        shutil.rmtree(output_dir, ignore_errors=True)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_file = output_dir / "report.json"
+    try:
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump(
+                report_payload,
+                f,
+                indent=2,
+                default=str,  # Safe fallback: convert any non-serializable objects (like Path) to strings
+            )
+    except Exception as e:
+        print(f"❌ Failed to write report: {e}")
+
+    attachments_dir = output_dir / "attachments"
+    attachments_dir.mkdir(exist_ok=True)
+    for attachment_id, attachment_data in file_attachments.items():
+        source_path = attachment_data["path"]
+        # The filename is exactly the ID (as requested)
+        destination_path = attachments_dir / attachment_id
+        try:
+            if source_path.exists():
+                # copy2 preserves timestamps and metadata
+                shutil.copy2(source_path, destination_path)
+            else:
+                print(
+                    f"⚠️ Warning: Source file for attachment {source_path.name} is missing at {source_path}"
+                )
+        except OSError as e:
+            print(f"❌ Failed to copy attachment {attachment_id}: {e}")
