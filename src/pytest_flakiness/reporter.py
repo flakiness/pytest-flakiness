@@ -3,13 +3,12 @@ import json
 import pytest
 from _pytest._code.code import ReprFileLocation, ReprTraceback
 import platform
-import sys
 import shutil
 import mimetypes
 import hashlib
 
 from pathlib import Path
-from typing import NewType, cast, Any, TypedDict, List
+from typing import NewType, cast, Any, TypedDict
 
 # Import your types from the sibling file
 from .flakiness_report import (
@@ -184,22 +183,6 @@ class Reporter:
             }
         return None
 
-    def extract_test_tags(self, report: pytest.TestReport) -> List[str] | None:
-        markers = getattr(report, "flakiness_injected_markers", [])
-
-        IGNORED_MARKERS = {
-            "parametrize",
-            "usefixtures",
-            "filterwarnings",
-            "skip",
-            "xfail",
-        }
-        tags: List[str] = []
-        for marker in markers:
-            if marker not in IGNORED_MARKERS:
-                tags.append(marker)
-        return tags or None
-
     def normalize_path(self, fspath: str) -> NormalizedPath | None:
         """
         Converts a pytest-relative path to a git-root-relative path.
@@ -249,13 +232,15 @@ class Reporter:
         expected_status: TestStatus = "passed"
         if "xfail" in markers:
             expected_status = "failed"
-        elif "skip" in markers:
+        elif current_status == "skipped":
             expected_status = "skipped"
 
         # Parse user properties
         annotations, file_attachments = self.parse_user_properties(report)
         for file_attachment in file_attachments:
             self.file_attachments[file_attachment["id"]] = file_attachment
+        if hasattr(report, "flakiness_injected_annotations"):
+            annotations.extend(report.flakiness_injected_annotations)
 
         # Add "Skip" reason as an annotation
         if report.outcome == "skipped":
@@ -302,7 +287,7 @@ class Reporter:
             self.tests[nodeid] = {
                 "title": self.parse_test_title(nodeid),
                 "location": self.as_location(report.location[0], report.location[1]),
-                "tags": self.extract_test_tags(report),
+                "tags": getattr(report, "flakiness_injected_tags", []),
                 "attempts": [],
             }
         self.tests[nodeid]["attempts"].append(attempt)
@@ -321,7 +306,7 @@ class Reporter:
                 "osVersion": platform.release(),
                 "osArch": platform.machine(),
             },
-            "userSuppliedData": {"python_version": sys.version},
+            "userSuppliedData": {"python_version": platform.python_version()},
         }
 
         # 2. Build Final Report
