@@ -9,7 +9,7 @@ import hashlib
 import os
 
 from pathlib import Path
-from typing import NewType, cast, Any, TypedDict, Dict
+from typing import NewType, cast, Any, Dict
 
 # Import your types from the sibling file
 from .flakiness_report import (
@@ -29,14 +29,7 @@ from .flakiness_report import (
     STDIOEntry,
 )
 
-
-class FileAttachment(TypedDict):
-    """Reference to a file attachment"""
-
-    contentType: str
-    id: AttachmentId
-    path: Path
-
+from .uploader import FileAttachment, upload_report
 
 # This behaves like a string at runtime, but type checkers treat it as distinct
 NormalizedPath = NewType("NormalizedPath", str)
@@ -338,8 +331,31 @@ class Reporter:
             "suites": [],
         }
 
+        token = os.environ.get("FLAKINESS_ACCESS_TOKEN") or os.environ.get(
+            "FLAKINESS_API_KEY"
+        )
+        endpoint = os.environ.get("FLAKINESS_ENDPOINT", "https://flakiness.io")
+
+        if token is not None:
+            upload_report(
+                report_payload, list(self.file_attachments.values()), endpoint, token
+            )
         output_dir = Path.cwd() / "flakiness-report"
         _write_report(report_payload, self.file_attachments, output_dir)
+
+
+def create_user_data() -> Dict[str, Any]:
+    user_data: Dict[str, Any] = {
+        "python_version": platform.python_version(),
+    }
+
+    prefix = "FK_ENV_"
+    for key, value in os.environ.items():
+        if key.startswith(prefix):
+            # Remove the prefix (e.g. FK_ENV_FOO -> FOO)
+            clean_key = key[len(prefix) :].lower()
+            user_data[clean_key] = value
+    return user_data
 
 
 def _write_report(
@@ -378,17 +394,3 @@ def _write_report(
                 )
         except OSError as e:
             print(f"❌ Failed to copy attachment {attachment_id}: {e}")
-
-
-def create_user_data() -> Dict[str, Any]:
-    user_data: Dict[str, Any] = {
-        "python_version": platform.python_version(),
-    }
-
-    prefix = "FK_ENV_"
-    for key, value in os.environ.items():
-        if key.startswith(prefix):
-            # Remove the prefix (e.g. FK_ENV_FOO -> FOO)
-            clean_key = key[len(prefix) :].lower()
-            user_data[clean_key] = value
-    return user_data
