@@ -92,4 +92,4 @@ def pytest_runtest_makereport(item, call):
     # 3. This attribute doesn't exist on TestReport, so we monkey-patch it on.
     report.flakiness_injected_tags = tags
     report.flakiness_injected_annotations = annotations
-    report.flakiness_injected_markers = annotations
+    report.flakiness_injected_markers = markers

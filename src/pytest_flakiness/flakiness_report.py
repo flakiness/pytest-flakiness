@@ -184,7 +184,7 @@ class RunAttempt(TypedDict):
 # -----------------------------------------------------------------------------
 
 
-class Test(TypedDict):
+class FKTest(TypedDict):
     """Represents a single test case."""
 
     title: str
@@ -207,7 +207,7 @@ class Suite(TypedDict):
 
     # Recursive references
     suites: NotRequired[List["Suite"]]
-    tests: NotRequired[List[Test]]
+    tests: NotRequired[List[FKTest]]
 
 
 # -----------------------------------------------------------------------------
@@ -229,7 +229,7 @@ class FlakinessReport(TypedDict):
     environments: List[Environment]
     suites: List[Suite]
 
-    tests: NotRequired[List[Test]]
+    tests: NotRequired[List[FKTest]]
     unattributedErrors: NotRequired[List[ReportError]]
 
     startTimestamp: UnixTimestampMS
