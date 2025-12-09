@@ -5,7 +5,9 @@
 [](https://opensource.org/licenses/MIT)
 
 The official [Flakiness.io](https://flakiness.io) reporter for **pytest**.
-This reporter is used to upload its own tests, see https://flakiness.io/flakiness/pytest-flakiness
+
+> [!TIP]
+> Report demo is available at https://flakiness.io/flakiness/pytest-flakiness
 
 ## Installation
 
@@ -26,17 +28,22 @@ pip install pytest-flakiness
 Once installed, simply run pytest. The reporter will automatically activate, aggregate test results,
 and create Flakiness Report in the `flakiness-report` directory.
 
-:::Note
-Make sure to add `flakiness-report` directory to your `.gitignore`
-
-```gitignore
-flakiness-report/
-```
-:::
-
 ```bash
 pytest
 ```
+
+The generated report can be viewed interactively via the [Flakiness CLI Tool](https://flakiness.io/docs/cli):
+
+```bash
+flakiness show-report
+```
+
+> [!TIP]
+> Make sure to add `flakiness-report` directory to your `.gitignore`
+> ```gitignore
+> flakiness-report/
+> ```
+
 
 If Flakiness Access Token is passed, then the reporter will upload the report to Flakiness.io.
 You will see a confirmation in your terminal summary:
