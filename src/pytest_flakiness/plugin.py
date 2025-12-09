@@ -28,8 +28,8 @@ def pytest_addoption(parser):
         "--flakiness-output-dir",
         action="store",
         dest="flakiness_output_dir",
-        default=os.environ.get("FLAKINESS_OUTPUT_DIR"),
-        help="Directory to dump the raw JSON report instead of uploading to Flakiness.io. Can also be set via FLAKINESS_OUTPUT_DIR env variable.",
+        default=os.environ.get("FLAKINESS_OUTPUT_DIR", "flakiness-report"),
+        help="Directory to dump the raw JSON report instead of uploading to Flakiness.io. Can also be set via FLAKINESS_OUTPUT_DIR env variable. Defaults to the 'flakiness-report'.",
     )
     group.addoption(
         "--flakiness-commit-id",
