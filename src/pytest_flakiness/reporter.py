@@ -236,7 +236,6 @@ class Reporter:
         markers = getattr(report, "flakiness_injected_markers", [])
         current_status: TestStatus = report.outcome
         expected_status: TestStatus = "passed"
-        print(markers)
         if "xfail" in markers:
             expected_status = "failed"
         elif current_status == "skipped":

@@ -269,7 +269,7 @@ def test_parametrization_named(pytester):
         pytester,
         """
         import pytest
-        
+
         @pytest.mark.parametrize("has_server", [True, False], ids=["Without Server", "With Server"])
         def test_should_work(has_server):
             assert True
@@ -279,3 +279,34 @@ def test_parametrization_named(pytester):
     assert len(tests) == 2
     assert tests[0]["title"] == "test_should_work[Without Server]"
     assert tests[1]["title"] == "test_should_work[With Server]"
+
+
+def test_exception_saved_as_error(pytester):
+    """Test that exceptions are properly captured as error objects."""
+    json = generate_json(
+        pytester,
+        """
+        def test_fails_with_exception():
+            assert 1 == 2, "Expected values to match"
+    """,
+    )
+
+    test = assert_first_test(json)
+    last_attempt = assert_last_attempt(test)
+
+    # Assert the test failed
+    assert last_attempt["status"] == "failed"
+
+    # Assert errors list exists and has one error
+    errors = last_attempt.get("errors", [])
+    assert len(errors) == 1
+
+    error = errors[0]
+
+    # Assert error has a message
+    assert "message" in error
+    assert "Expected values to match" in error["message"]
+
+    # Assert error has a stack trace
+    assert "stack" in error
+    assert len(error["stack"]) > 0
