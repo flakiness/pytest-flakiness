@@ -310,3 +310,34 @@ def test_exception_saved_as_error(pytester):
     # Assert error has a stack trace
     assert "stack" in error
     assert len(error["stack"]) > 0
+
+
+def test_stdout_captured(pytester):
+    """Test that stdout is properly captured and reported."""
+    json = generate_json(
+        pytester,
+        """
+        def test_with_stdout():
+            print("Hello from test")
+            print("Multiple lines")
+            assert True
+    """,
+    )
+
+    test = assert_first_test(json)
+    last_attempt = assert_last_attempt(test)
+
+    # Assert the test passed
+    assert last_attempt["status"] == "passed"
+
+    # Assert stdout exists and has content
+    stdout = last_attempt.get("stdout", [])
+    assert len(stdout) > 0
+
+    # Stdout should be a list of STDIOEntry (text entries)
+    assert "text" in stdout[0]
+    stdout_text = stdout[0]["text"]
+
+    # Verify our print statements are captured
+    assert "Hello from test" in stdout_text
+    assert "Multiple lines" in stdout_text
