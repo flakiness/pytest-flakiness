@@ -39,6 +39,13 @@ def pytest_addoption(parser):
         help="Commit ID of the repository under test. Can also be set via FLAKINESS_COMMIT_ID env variable. Defaults to current git commit.",
     )
     group.addoption(
+        "--flakiness-name",
+        action="store",
+        dest="flakiness_name",
+        default=os.environ.get("FLAKINESS_NAME", "pytest"),
+        help="Name for the Flakiness Report environment. Defaults to 'pytest'",
+    )
+    group.addoption(
         "--flakiness-git-root",
         action="store",
         dest="flakiness_git_root",

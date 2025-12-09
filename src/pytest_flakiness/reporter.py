@@ -322,7 +322,7 @@ class Reporter:
 
         # Cast strictly to the FlakinessReport TypedDict
         report_payload: FlakinessReport = {
-            "category": "pytest",
+            "category": session.config.getoption("flakiness_name"),
             "commitId": self.commit_id,
             "startTimestamp": UnixTimestampMS(self.start_time),
             "duration": DurationMS(end_time - self.start_time),

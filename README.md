@@ -21,55 +21,25 @@ Or via standard pip:
 pip install pytest-flakiness
 ```
 
-## Configuration
-
-To upload reports, you need your project's **API Key**. You can find this in your project settings on [flakiness.io](https://flakiness.io).
-
-### Authentication
-
-Set the API key using either an environment variable or command-line flag:
-
-**Environment variable (recommended for CI/CD):**
-```bash
-export FLAKINESS_ACCESS_TOKEN="flakiness-io-..."
-```
-
-**Command-line flag:**
-```bash
-pytest --flakiness-access-token="flakiness-io-..."
-```
-
-### All Configuration Options
-
-All options can be set via environment variables or command-line flags:
-
-| Flag | Environment Variable | Default | Description |
-|------|---------------------|---------|-------------|
-| `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | - | Local directory to save JSON report |
-| `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | - | Your Flakiness.io API key (required for upload) |
-| `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | `https://flakiness.io` | Flakiness.io service endpoint |
-
-### Custom Environment Data
-
-You can add custom metadata to your test runs using `FK_ENV_*` environment variables. These might be handy
-to capture properties that affect system-under-test.
-
-```bash
-export FK_ENV_GPU="H100"
-export FK_ENV_DEPLOYMENT="staging"
-```
-
-The `FK_ENV_` prefix is removed and keys are lowercased (e.g., `FK_ENV_DEPLOYMENT` becomes `deployment`).
-
 ## Usage
 
-Once installed, simply run pytest. If the `FLAKINESS_ACCESS_TOKEN` is present, the reporter will automatically activate, aggregate test results, and upload them at the end of the session.
+Once installed, simply run pytest. The reporter will automatically activate, aggregate test results,
+and create Flakiness Report in the `flakiness-report` directory.
+
+:::Note
+Make sure to add `flakiness-report` directory to your `.gitignore`
+
+```gitignore
+flakiness-report/
+```
+:::
 
 ```bash
 pytest
 ```
 
-You should see a confirmation in your terminal summary:
+If Flakiness Access Token is passed, then the reporter will upload the report to Flakiness.io.
+You will see a confirmation in your terminal summary:
 
 ```text
 ...
@@ -78,6 +48,41 @@ PASSED [100%]
 ✅ [Flakiness] Report uploaded: https://flakiness.io/your_org/your_proj/run/1
 ==============================
 ```
+
+## Uploading Reports to Flakiness.io
+
+To upload reports, you need your project's **Access Token**. You can find this in your project settings on [flakiness.io](https://flakiness.io).
+
+Set the Access Token using either an environment variable (recommended for CI/CD) or command-line flag:
+
+```bash
+export FLAKINESS_ACCESS_TOKEN="flakiness-io-..."
+pytest --flakiness-access-token="flakiness-io-..."
+```
+
+
+### All Configuration Options
+
+All options can be set via environment variables or command-line flags:
+
+| Flag | Environment Variable | Description |
+|------|---------------------|-------------|
+| `--flakiness-name` | `FLAKINESS_NAME` | Name for this environment. Defaults to `pytest` |
+| `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | Local directory to save JSON report. Defaults to `flakiness-report` |
+| `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | Your Flakiness.io access token (required for upload) |
+| `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | Flakiness.io service endpoint. Defaults to `https://flakiness.io` |
+
+### Custom Environment Data
+
+You can add custom metadata to your test runs using `FK_ENV_*` environment variables. These might be handy
+to capture properties that affect system-under-test.
+
+```bash
+export FK_ENV_GPU_TYPE="H100"
+export FK_ENV_DEPLOYMENT="staging"
+```
+
+The `FK_ENV_` prefix is removed and keys are lowercased, e.g. `FK_ENV_DEPLOYMENT` becomes `deployment`, and `FK_ENV_GPU_TYPE` becomses `gpu_type`.
 
 ### Local Development
 
