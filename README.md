@@ -29,12 +29,12 @@ To upload reports, you need your project's **API Key**. You can find this in you
 Set the API key in your environment. This is best for CI/CD systems.
 
 ```bash
-export FLAKINESS_API_KEY="fk_live_..."
+export FLAKINESS_ACCESS_TOKEN="flakiness-io-..."
 ```
 
 ## Usage
 
-Once installed, simply run pytest. If the `FLAKINESS_API_KEY` is present, the reporter will automatically activate, aggregate test results, and upload them at the end of the session.
+Once installed, simply run pytest. If the `FLAKINESS_ACCESS_TOKEN` is present, the reporter will automatically activate, aggregate test results, and upload them at the end of the session.
 
 ```bash
 uv run pytest
@@ -46,8 +46,7 @@ You should see a confirmation in your terminal summary:
 ...
 PASSED [100%]
 ============================== 
-✅ Flakiness.io report uploaded successfully:
-https://app.flakiness.io/report/12345
+✅ [Flakiness] Report uploaded: https://flakiness.io/your_org/your_proj/run/1
 ==============================
 ```
 
@@ -58,7 +57,7 @@ To ensure reports are uploaded during your CI runs, map the secret in your workf
 ```yaml
 - name: Run Tests
   env:
-    FLAKINESS_API_KEY: ${{ secrets.FLAKINESS_API_KEY }}
+    FLAKINESS_ACCESS_TOKEN: ${{ secrets.FLAKINESS_ACCESS_TOKEN }}
   run: uv run pytest
 ```
 
@@ -88,6 +87,10 @@ You can trigger the full suite of checks on all files at any time:
 ```bash
 uv run pre-commit run --all-files
 ```
+
+### Tests Dashboard
+
+The tests dashboard is available at https://flakiness.io/flakiness/pytest-flakiness
 
 ## License
 
