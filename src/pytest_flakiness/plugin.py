@@ -8,17 +8,51 @@ from .git import get_git_commit, get_git_root
 # Import your types from the sibling file
 from .reporter import Reporter
 from .flakiness_report import Annotation
+import os
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Called when the test session begins."""
-    commit_id = get_git_commit()
-    git_root = get_git_root()
+    commit_id = (
+        session.config.getoption("flakiness_commit_id")
+        or os.environ.get("FLAKINESS_COMMIT_ID")
+        or get_git_commit()
+    )
+    git_root = (
+        session.config.getoption("flakiness_git_root")
+        or os.environ.get("FLAKINESS_GIT_ROOT")
+        or get_git_root()
+    )
 
-    if git_root is not None and commit_id is not None:
+    if git_root and commit_id:
         reporter = Reporter(commit_id, Path(git_root), session.config.rootpath)
         session.config.pluginmanager.register(reporter, name="flakiness_reporter")
+
+
+def pytest_addoption(parser):
+    group = parser.getgroup("flakiness")
+    group.addoption(
+        "--flakiness-output-dir",
+        action="store",
+        dest="flakiness_output_dir",
+        default=None,
+        help="Directory to dump the raw JSON report instead of uploading to Flakiness.io",
+    )
+    group.addoption(
+        "--flakiness-commit-id",
+        action="store",
+        dest="flakiness_commit_id",
+        default=None,
+        help="Commit Id of the repository under test",
+    )
+    group.addoption(
+        "--flakiness-git-root",
+        action="store",
+        dest="flakiness_git_root",
+        default=None,
+        help="The root directory to normalize all paths",
+    )
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

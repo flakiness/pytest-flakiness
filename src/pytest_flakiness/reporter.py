@@ -340,8 +340,12 @@ class Reporter:
             upload_report(
                 report_payload, list(self.file_attachments.values()), endpoint, token
             )
-        output_dir = Path.cwd() / "flakiness-report"
-        _write_report(report_payload, self.file_attachments, output_dir)
+
+        output_dir: str | None = session.config.getoption(
+            "flakiness_output_dir"
+        ) or os.environ.get("FLAKINESS_OUTPUT_DIR")
+        if output_dir:
+            _write_report(report_payload, self.file_attachments, Path(output_dir))
 
 
 def create_user_data() -> Dict[str, Any]:
