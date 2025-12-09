@@ -331,21 +331,15 @@ class Reporter:
             "suites": [],
         }
 
-        token = session.config.getoption("flakiness_access_token") or os.environ.get(
-            "FLAKINESS_ACCESS_TOKEN"
-        )
-        endpoint = session.config.getoption("flakiness_endpoint") or os.environ.get(
-            "FLAKINESS_ENDPOINT", "https://flakiness.io"
-        )
+        token = session.config.getoption("flakiness_access_token")
+        endpoint = session.config.getoption("flakiness_endpoint")
 
         if token is not None:
             upload_report(
                 report_payload, list(self.file_attachments.values()), endpoint, token
             )
 
-        output_dir: str | None = session.config.getoption(
-            "flakiness_output_dir"
-        ) or os.environ.get("FLAKINESS_OUTPUT_DIR")
+        output_dir: str | None = session.config.getoption("flakiness_output_dir")
         if output_dir:
             _write_report(report_payload, self.file_attachments, Path(output_dir))
 

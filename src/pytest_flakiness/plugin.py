@@ -14,16 +14,8 @@ import os
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Called when the test session begins."""
-    commit_id = (
-        session.config.getoption("flakiness_commit_id")
-        or os.environ.get("FLAKINESS_COMMIT_ID")
-        or get_git_commit()
-    )
-    git_root = (
-        session.config.getoption("flakiness_git_root")
-        or os.environ.get("FLAKINESS_GIT_ROOT")
-        or get_git_root()
-    )
+    commit_id = session.config.getoption("flakiness_commit_id")
+    git_root = session.config.getoption("flakiness_git_root")
 
     if git_root and commit_id:
         reporter = Reporter(commit_id, Path(git_root), session.config.rootpath)
@@ -36,36 +28,36 @@ def pytest_addoption(parser):
         "--flakiness-output-dir",
         action="store",
         dest="flakiness_output_dir",
-        default=None,
-        help="Directory to dump the raw JSON report instead of uploading to Flakiness.io",
+        default=os.environ.get("FLAKINESS_OUTPUT_DIR"),
+        help="Directory to dump the raw JSON report instead of uploading to Flakiness.io. Can also be set via FLAKINESS_OUTPUT_DIR env variable.",
     )
     group.addoption(
         "--flakiness-commit-id",
         action="store",
         dest="flakiness_commit_id",
-        default=None,
-        help="Commit Id of the repository under test",
+        default=os.environ.get("FLAKINESS_COMMIT_ID", get_git_commit()),
+        help="Commit ID of the repository under test. Can also be set via FLAKINESS_COMMIT_ID env variable. Defaults to current git commit.",
     )
     group.addoption(
         "--flakiness-git-root",
         action="store",
         dest="flakiness_git_root",
-        default=None,
-        help="The root directory to normalize all paths",
+        default=os.environ.get("FLAKINESS_GIT_ROOT", get_git_root()),
+        help="The root directory to normalize all paths. Can also be set via FLAKINESS_GIT_ROOT env variable. Defaults to git repository root.",
     )
     group.addoption(
         "--flakiness-access-token",
         action="store",
         dest="flakiness_access_token",
-        default=None,
-        help="The Flakiness Access Token to upload report",
+        default=os.environ.get("FLAKINESS_ACCESS_TOKEN"),
+        help="The Flakiness Access Token to upload report. Can also be set via FLAKINESS_ACCESS_TOKEN env variable.",
     )
     group.addoption(
         "--flakiness-endpoint",
         action="store",
         dest="flakiness_endpoint",
-        default=None,
-        help="Flakiness.io service endpoint. Defaults to https://flakiness.io",
+        default=os.environ.get("FLAKINESS_ENDPOINT", "https://flakiness.io"),
+        help="Flakiness.io service endpoint. Can also be set via FLAKINESS_ENDPOINT env variable. Defaults to https://flakiness.io",
     )
 
 
