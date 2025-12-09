@@ -341,3 +341,35 @@ def test_stdout_captured(pytester):
     # Verify our print statements are captured
     assert "Hello from test" in stdout_text
     assert "Multiple lines" in stdout_text
+
+
+def test_fk_env_variables_propagated(pytester, monkeypatch):
+    """Test that FK_ENV_* environment variables are propagated to userSuppliedData."""
+    # Set FK_ENV_* variables
+    monkeypatch.setenv("FK_ENV_BUILD_ID", "12345")
+    monkeypatch.setenv("FK_ENV_BRANCH", "main")
+    monkeypatch.setenv("FK_ENV_CI_RUNNER", "github-actions")
+
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+    )
+
+    # Assert we have one environment
+    assert len(json["environments"]) == 1
+    env = json["environments"][0]
+
+    # Assert userSuppliedData exists
+    user_data = env.get("userSuppliedData", {})
+    assert user_data is not None
+
+    # Assert FK_ENV_* variables are propagated with lowercase keys (prefix removed)
+    assert user_data.get("build_id") == "12345"
+    assert user_data.get("branch") == "main"
+    assert user_data.get("ci_runner") == "github-actions"
+
+    # Assert python_version is also included
+    assert "python_version" in user_data
