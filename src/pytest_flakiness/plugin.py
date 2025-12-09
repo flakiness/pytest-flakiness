@@ -53,6 +53,20 @@ def pytest_addoption(parser):
         default=None,
         help="The root directory to normalize all paths",
     )
+    group.addoption(
+        "--flakiness-access-token",
+        action="store",
+        dest="flakiness_access_token",
+        default=None,
+        help="The Flakiness Access Token to upload report",
+    )
+    group.addoption(
+        "--flakiness-endpoint",
+        action="store",
+        dest="flakiness_endpoint",
+        default=None,
+        help="Flakiness.io service endpoint. Defaults to https://flakiness.io",
+    )
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

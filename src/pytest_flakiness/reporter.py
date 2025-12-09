@@ -331,10 +331,12 @@ class Reporter:
             "suites": [],
         }
 
-        token = os.environ.get("FLAKINESS_ACCESS_TOKEN") or os.environ.get(
-            "FLAKINESS_API_KEY"
+        token = session.config.getoption("flakiness_access_token") or os.environ.get(
+            "FLAKINESS_ACCESS_TOKEN"
         )
-        endpoint = os.environ.get("FLAKINESS_ENDPOINT", "https://flakiness.io")
+        endpoint = session.config.getoption("flakiness_endpoint") or os.environ.get(
+            "FLAKINESS_ENDPOINT", "https://flakiness.io"
+        )
 
         if token is not None:
             upload_report(
