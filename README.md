@@ -35,7 +35,7 @@ pytest
 The generated report can be viewed interactively via the [Flakiness CLI Tool](https://flakiness.io/docs/cli):
 
 ```bash
-flakiness show-report
+flakiness show
 ```
 
 > [!TIP]
