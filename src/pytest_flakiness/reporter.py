@@ -314,7 +314,7 @@ class Reporter:
                 "osVersion": platform.release(),
                 "osArch": platform.machine(),
             },
-            "userSuppliedData": create_user_data(),
+            "metadata": create_user_data(),
         }
 
         # 2. Build Final Report

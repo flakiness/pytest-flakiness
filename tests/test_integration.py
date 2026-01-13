@@ -344,7 +344,7 @@ def test_stdout_captured(pytester):
 
 
 def test_fk_env_variables_propagated(pytester, monkeypatch):
-    """Test that FK_ENV_* environment variables are propagated to userSuppliedData."""
+    """Test that FK_ENV_* environment variables are propagated to metadata."""
     # Set FK_ENV_* variables
     monkeypatch.setenv("FK_ENV_BUILD_ID", "12345")
     monkeypatch.setenv("FK_ENV_BRANCH", "main")
@@ -362,8 +362,8 @@ def test_fk_env_variables_propagated(pytester, monkeypatch):
     assert len(json["environments"]) == 1
     env = json["environments"][0]
 
-    # Assert userSuppliedData exists
-    user_data = env.get("userSuppliedData", {})
+    # Assert metadata exists
+    user_data = env.get("metadata", {})
     assert user_data is not None
 
     # Assert FK_ENV_* variables are propagated with lowercase keys (prefix removed)

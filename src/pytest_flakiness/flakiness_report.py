@@ -4,7 +4,7 @@ flakiness_report.py
 Python type definitions mirroring the FlakinessReport TypeScript schema.
 """
 
-from typing import TypedDict, List, Dict, Any, Literal, NewType, Union
+from typing import TypedDict, List, Dict, Literal, NewType, Union
 
 # Note: For Python < 3.11, install typing_extensions: pip install typing_extensions
 from typing import NotRequired
@@ -68,10 +68,7 @@ class Environment(TypedDict):
     systemData: NotRequired[SystemData]
 
     # User-supplied data (metadata, env vars)
-    userSuppliedData: NotRequired[Dict[str, Union[str, bool, int, float]]]
-
-    # Opaque data from test framework (not indexed)
-    opaqueData: NotRequired[Any]
+    metadata: NotRequired[Dict[str, Union[str, bool, int, float]]]
 
 
 # -----------------------------------------------------------------------------
@@ -211,6 +208,20 @@ class Suite(TypedDict):
 
 
 # -----------------------------------------------------------------------------
+# Source Code
+# -----------------------------------------------------------------------------
+
+
+class Source(TypedDict):
+    """Represents source code snippets embedded in the report."""
+
+    filePath: GitFilePath
+    text: str
+    lineOffset: NotRequired[Number1Based]
+    contentType: NotRequired[str]
+
+
+# -----------------------------------------------------------------------------
 # Root Report
 # -----------------------------------------------------------------------------
 
@@ -235,5 +246,14 @@ class FlakinessReport(TypedDict):
     startTimestamp: UnixTimestampMS
     duration: DurationMS
 
-    opaqueData: NotRequired[Any]
-    systemUtilization: NotRequired[SystemUtilization]
+    # Source code snippets referenced by locations in the report
+    sources: NotRequired[List[Source]]
+
+    # CPU telemetry
+    cpuCount: NotRequired[int]
+    cpuAvg: NotRequired[List[tuple[DurationMS, float]]]  # UtilizationTelemetry
+    cpuMax: NotRequired[List[tuple[DurationMS, float]]]  # UtilizationTelemetry
+
+    # RAM telemetry
+    ram: NotRequired[List[tuple[DurationMS, float]]]  # UtilizationTelemetry
+    ramBytes: NotRequired[int]
