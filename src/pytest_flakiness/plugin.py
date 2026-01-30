@@ -88,7 +88,6 @@ def pytest_runtest_makereport(item, call):
     }
     tags: List[str] = []
     annotations: List[Annotation] = []
-    tags: List[str] = []
     markers: List[str] = []
     for marker in item.iter_markers():
         markers.append(marker.name)
