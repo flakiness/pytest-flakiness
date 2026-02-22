@@ -341,22 +341,21 @@ class Reporter:
         endpoint = session.config.getoption("flakiness_endpoint")
 
         # If no access token, attempt GitHub OIDC authentication
-        if token is None:
-            github_oidc = GithubOIDC.init_from_env()
-            if github_oidc is not None:
-                if not flakiness_project:
-                    is_ci = os.environ.get("CI")
-                    if is_ci:
-                        print(
-                            "[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
-                        )
-                else:
-                    try:
-                        token = github_oidc.fetch_token(flakiness_project)
-                    except Exception as e:
-                        print(
-                            f"[Flakiness] Error fetching GitHub OIDC token: {e}"
-                        )
+        github_oidc = GithubOIDC.init_from_env()
+        if token is None and github_oidc is not None:
+            if not flakiness_project:
+                is_ci = os.environ.get("CI")
+                if is_ci:
+                    print(
+                        "[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
+                    )
+            else:
+                try:
+                    token = github_oidc.fetch_token(flakiness_project)
+                except Exception as e:
+                    print(
+                        f"[Flakiness] Error fetching GitHub OIDC token: {e}"
+                    )
 
         if token is not None:
             upload_report(
