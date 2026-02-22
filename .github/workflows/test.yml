@@ -21,5 +21,5 @@ jobs:
           version: "latest"
 
       - name: Run tests
-        run: uv run pytest --flakiness-access-token="${{ secrets.FLAKINESS_ACCESS_TOKEN }}"
+        run: uv run pytest --flakiness-project="flakiness/pytest-flakiness"
 
