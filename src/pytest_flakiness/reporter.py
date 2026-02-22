@@ -337,7 +337,7 @@ class Reporter:
         if flakiness_project:
             report_payload["flakinessProject"] = flakiness_project
 
-        token = session.config.getoption("flakiness_access_token")
+        token = session.config.getoption("flakiness_access_token") or None
         endpoint = session.config.getoption("flakiness_endpoint")
 
         # If no access token, attempt GitHub OIDC authentication
