@@ -229,6 +229,8 @@ class Source(TypedDict):
 class FlakinessReport(TypedDict):
     """The root report object containing all test execution data."""
 
+    flakinessProject: NotRequired[str]
+
     category: str  # 'playwright' | 'junit' | 'perf' | string
 
     commitId: CommitId

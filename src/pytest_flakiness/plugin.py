@@ -53,6 +53,13 @@ def pytest_addoption(parser):
         help="The root directory to normalize all paths. Can also be set via FLAKINESS_GIT_ROOT env variable. Defaults to git repository root.",
     )
     group.addoption(
+        "--flakiness-project",
+        action="store",
+        dest="flakiness_project",
+        default=os.environ.get("FLAKINESS_PROJECT"),
+        help="Flakiness.io project identifier (e.g. 'org/project'). Required for GitHub OIDC authentication. Can also be set via FLAKINESS_PROJECT env variable.",
+    )
+    group.addoption(
         "--flakiness-access-token",
         action="store",
         dest="flakiness_access_token",
