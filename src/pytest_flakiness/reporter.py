@@ -30,6 +30,7 @@ from .flakiness_report import (
 )
 
 from .uploader import FileAttachment, upload_report
+from .github_oidc import GithubOIDC
 
 # This behaves like a string at runtime, but type checkers treat it as distinct
 NormalizedPath = NewType("NormalizedPath", str)
@@ -320,6 +321,8 @@ class Reporter:
         # 2. Build Final Report
         end_time = int(time.time() * 1000)
 
+        flakiness_project: str | None = session.config.getoption("flakiness_project")
+
         # Cast strictly to the FlakinessReport TypedDict
         report_payload: FlakinessReport = {
             "category": session.config.getoption("flakiness_name"),
@@ -331,8 +334,29 @@ class Reporter:
             "suites": [],
         }
 
+        if flakiness_project:
+            report_payload["flakinessProject"] = flakiness_project
+
         token = session.config.getoption("flakiness_access_token")
         endpoint = session.config.getoption("flakiness_endpoint")
+
+        # If no access token, attempt GitHub OIDC authentication
+        if token is None:
+            github_oidc = GithubOIDC.init_from_env()
+            if github_oidc is not None:
+                if not flakiness_project:
+                    is_ci = os.environ.get("CI")
+                    if is_ci:
+                        print(
+                            "[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
+                        )
+                else:
+                    try:
+                        token = github_oidc.fetch_token(flakiness_project)
+                    except Exception as e:
+                        print(
+                            f"[Flakiness] Error fetching GitHub OIDC token: {e}"
+                        )
 
         if token is not None:
             upload_report(
