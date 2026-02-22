@@ -58,15 +58,29 @@ PASSED [100%]
 
 ## Uploading Reports to Flakiness.io
 
-To upload reports, you need your project's **Access Token**. You can find this in your project settings on [flakiness.io](https://flakiness.io).
+### GitHub OIDC
 
-Set the Access Token using either an environment variable (recommended for CI/CD) or command-line flag:
+When running in GitHub Actions, the reporter can authenticate using GitHub's OIDC token — no access token needed.
+
+For this to work:
+1. The `--flakiness-project` option must be set to your Flakiness.io project identifier (`org/project`).
+2. The Flakiness.io project must be bound to the GitHub repository that runs the GitHub Actions workflow.
+
+```yaml
+- name: Run Tests
+  run: pytest --flakiness-project="my-org/my-project"
+```
+
+### Access Token
+
+Alternatively, you can authenticate using your project's **Access Token**. You can find this in your project settings on [flakiness.io](https://flakiness.io).
+
+Set the Access Token using either an environment variable or command-line flag:
 
 ```bash
 export FLAKINESS_ACCESS_TOKEN="flakiness-io-..."
 pytest --flakiness-access-token="flakiness-io-..."
 ```
-
 
 ### All Configuration Options
 
@@ -76,7 +90,8 @@ All options can be set via environment variables or command-line flags:
 |------|---------------------|-------------|
 | `--flakiness-name` | `FLAKINESS_NAME` | Name for this environment. Defaults to `pytest` |
 | `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | Local directory to save JSON report. Defaults to `flakiness-report` |
-| `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | Your Flakiness.io access token (required for upload) |
+| `--flakiness-project` | `FLAKINESS_PROJECT` | Flakiness.io project identifier (e.g. `org/project`). Required for GitHub OIDC authentication |
+| `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | Your Flakiness.io access token for upload |
 | `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | Flakiness.io service endpoint. Defaults to `https://flakiness.io` |
 
 ### Custom Environment Data
@@ -103,20 +118,20 @@ This will create a `report.json` file and an `attachments/` directory in the spe
 
 ## CI/CD Example (GitHub Actions)
 
-To ensure reports are uploaded during your CI runs, map the secret in your workflow:
+Using GitHub OIDC (recommended — no secrets needed):
+
+```yaml
+- name: Run Tests
+  run: pytest --flakiness-project="my-org/my-project"
+```
+
+Alternatively, using an access token:
 
 ```yaml
 - name: Run Tests
   env:
     FLAKINESS_ACCESS_TOKEN: ${{ secrets.FLAKINESS_ACCESS_TOKEN }}
   run: pytest
-```
-
-Or use the command-line flag:
-
-```yaml
-- name: Run Tests
-  run: pytest --flakiness-access-token="${{ secrets.FLAKINESS_ACCESS_TOKEN }}"
 ```
 
 ## 🛠️ Development Setup
