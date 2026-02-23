@@ -71,6 +71,15 @@ For this to work:
   run: pytest --flakiness-project="my-org/my-project"
 ```
 
+You can also use the `FLAKINESS_PROJECT` environment variable instead of the CLI flag:
+
+```yaml
+- name: Run Tests
+  env:
+    FLAKINESS_PROJECT: my-org/my-project
+  run: pytest
+```
+
 ### Access Token
 
 Alternatively, you can authenticate using your project's **Access Token**. You can find this in your project settings on [flakiness.io](https://flakiness.io).
