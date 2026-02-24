@@ -58,13 +58,13 @@ PASSED [100%]
 
 ## Uploading Reports to Flakiness.io
 
-### GitHub OIDC
+### Github Actions
 
 When running in GitHub Actions, the reporter can authenticate using GitHub's OIDC token — no access token needed.
 
 For this to work:
 1. The GitHub Actions workflow must have `id-token: write` permission.
-2. The `--flakiness-project` option must be set to your Flakiness.io project identifier (`org/project`).
+2. The `--flakiness-project` option (or `FLAKINESS_PROJECT` env variable) must be set to your Flakiness.io project identifier (`org/project`).
 3. The Flakiness.io project must be bound to the GitHub repository that runs the GitHub Actions workflow.
 
 ```yaml
