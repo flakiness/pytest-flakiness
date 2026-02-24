@@ -63,21 +63,30 @@ PASSED [100%]
 When running in GitHub Actions, the reporter can authenticate using GitHub's OIDC token — no access token needed.
 
 For this to work:
-1. The `--flakiness-project` option must be set to your Flakiness.io project identifier (`org/project`).
-2. The Flakiness.io project must be bound to the GitHub repository that runs the GitHub Actions workflow.
+1. The GitHub Actions workflow must have `id-token: write` permission.
+2. The `--flakiness-project` option must be set to your Flakiness.io project identifier (`org/project`).
+3. The Flakiness.io project must be bound to the GitHub repository that runs the GitHub Actions workflow.
 
 ```yaml
-- name: Run Tests
-  run: pytest --flakiness-project="my-org/my-project"
+permissions:
+  id-token: write
+
+steps:
+  - name: Run Tests
+    run: pytest --flakiness-project="my-org/my-project"
 ```
 
 You can also use the `FLAKINESS_PROJECT` environment variable instead of the CLI flag:
 
 ```yaml
-- name: Run Tests
-  env:
-    FLAKINESS_PROJECT: my-org/my-project
-  run: pytest
+permissions:
+  id-token: write
+
+steps:
+  - name: Run Tests
+    env:
+      FLAKINESS_PROJECT: my-org/my-project
+    run: pytest
 ```
 
 ### Access Token
@@ -130,8 +139,12 @@ This will create a `report.json` file and an `attachments/` directory in the spe
 Using GitHub OIDC (recommended — no secrets needed):
 
 ```yaml
-- name: Run Tests
-  run: pytest --flakiness-project="my-org/my-project"
+permissions:
+  id-token: write
+
+steps:
+  - name: Run Tests
+    run: pytest --flakiness-project="my-org/my-project"
 ```
 
 Alternatively, using an access token:
