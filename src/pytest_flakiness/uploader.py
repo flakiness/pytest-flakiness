@@ -142,7 +142,7 @@ def upload_report(
         finish_resp.raise_for_status()
 
         full_url = f"{endpoint}{upload_session_data['webUrl']}"
-        print(f"✅ [Flakiness] Report uploaded: {full_url}")
+        print(f"[Flakiness] Report uploaded: {full_url}")
 
     except Exception as e:
-        print(f"❌ [Flakiness] Upload failed: {e}")
+        print(f"[Flakiness] Upload failed: {e}")
