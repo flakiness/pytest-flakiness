@@ -347,14 +347,14 @@ class Reporter:
                 is_ci = os.environ.get("CI")
                 if is_ci:
                     print(
-                        "[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
+                        "\n[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
                     )
             else:
                 try:
                     token = github_oidc.fetch_token(flakiness_project)
                 except Exception as e:
                     print(
-                        f"[Flakiness] Error fetching GitHub OIDC token: {e}"
+                        f"\n[Flakiness] Error fetching GitHub OIDC token: {e}"
                     )
 
         if token is not None:
