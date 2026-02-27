@@ -399,7 +399,7 @@ def _write_report(
                 default=str,  # Safe fallback: convert any non-serializable objects (like Path) to strings
             )
     except Exception as e:
-        print(f"❌ Failed to write report: {e}")
+        print(f"[Flakiness] Failed to write report: {e}")
 
     attachments_dir = output_dir / "attachments"
     attachments_dir.mkdir(exist_ok=True)
@@ -413,7 +413,7 @@ def _write_report(
                 shutil.copy2(source_path, destination_path)
             else:
                 print(
-                    f"⚠️ Warning: Source file for attachment {source_path.name} is missing at {source_path}"
+                    f"[Flakiness] Warning: Source file for attachment {source_path.name} is missing at {source_path}"
                 )
         except OSError as e:
-            print(f"❌ Failed to copy attachment {attachment_id}: {e}")
+            print(f"[Flakiness] Failed to copy attachment {attachment_id}: {e}")
