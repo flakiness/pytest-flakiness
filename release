@@ -1,0 +1,47 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.13"
+# dependencies = ["tomlkit"]
+# ///
+
+import argparse
+import subprocess
+import sys
+from pathlib import Path
+
+import tomlkit
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Bump version and create a release commit + tag")
+    parser.add_argument("bump", choices=["major", "minor", "patch"])
+    args = parser.parse_args()
+
+    pyproject_path = Path(__file__).parent / "pyproject.toml"
+    doc = tomlkit.parse(pyproject_path.read_text())
+
+    old = doc["project"]["version"]
+    major, minor, patch = (int(x) for x in old.split("."))
+
+    if args.bump == "major":
+        major, minor, patch = major + 1, 0, 0
+    elif args.bump == "minor":
+        minor, patch = minor + 1, 0
+    else:
+        patch += 1
+
+    new = f"{major}.{minor}.{patch}"
+    doc["project"]["version"] = new
+    pyproject_path.write_text(tomlkit.dumps(doc))
+    print(f"{old} -> {new}")
+
+    for cmd in [
+        ["uv", "sync"],
+        ["git", "commit", "-am", f"chore: mark v{new}"],
+        ["git", "tag", "-a", f"v{new}", "-m", new],
+    ]:
+        subprocess.run(cmd, check=True)
+
+
+if __name__ == "__main__":
+    main()
