@@ -12,8 +12,11 @@ permissions:
 
 jobs:
   test:
-    name: Run Tests
-    runs-on: ubuntu-latest
+    name: Run Tests (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - name: Checkout code

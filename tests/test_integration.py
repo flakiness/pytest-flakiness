@@ -3,9 +3,13 @@ from pathlib import Path
 from pytest_flakiness.flakiness_report import FlakinessReport, FKTest
 
 
-def generate_json(pytester, str) -> FlakinessReport:
+def generate_json(pytester, str, subdirectory: str | None = None) -> FlakinessReport:
     # 1. Create a dummy test file so pytest has something to run
-    pytester.makepyfile(str)
+    if subdirectory:
+        pytester.mkdir(subdirectory)
+        pytester.makepyfile(**{f"{subdirectory}/test_file": str})
+    else:
+        pytester.makepyfile(str)
 
     # 2. Define the output directory name
     output_dir_name = "my_flake_report"
@@ -373,3 +377,21 @@ def test_fk_env_variables_propagated(pytester, monkeypatch):
 
     # Assert python_version is also included
     assert "python_version" in user_data
+
+
+def test_git_file_path_uses_forward_slashes(pytester):
+    """GitFilePath should always use forward slashes, even on Windows."""
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy_pass():
+            assert True
+    """,
+        subdirectory="subdir",
+    )
+
+    test = assert_first_test(json)
+    location = test.get("location")
+    assert location is not None
+    assert location["file"] == "subdir/test_file.py"
+    assert "\\" not in location["file"]

@@ -206,7 +206,7 @@ class Reporter:
             # .resolve() handles symlinks and ".." to ensure accurate math
             full_path = path_obj.resolve()
             relative = full_path.relative_to(self.git_root)
-            return NormalizedPath(str(relative))
+            return NormalizedPath(relative.as_posix())
         except ValueError:
             # Fallback: File is outside the git repo (e.g. site-packages)
             return None
