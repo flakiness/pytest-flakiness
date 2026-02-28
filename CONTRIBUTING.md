@@ -33,7 +33,7 @@ The tests dashboard is available at https://flakiness.io/flakiness/pytest-flakin
 
 ## Publishing a New Version
 
-1. Update the version in `pyproject.toml`.
-2. Create a commit: `git commit -m "chore: mark vX.X.X"`.
-3. In GitHub, create a new release with a matching tag (e.g. `vX.X.X`).
-4. The CI job reacts to the created release and publishes the package to PyPI automatically.
+1. Run `./release patch` (or `minor` / `major`) to bump the version, commit, and tag.
+2. Push with tags: `git push --follow-tags`.
+3. In GitHub, create a new release for the tag — use "Generate release notes" for the description.
+4. The CI job reacts to the published release and publishes the package to PyPI automatically.
