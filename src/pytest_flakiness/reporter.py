@@ -273,8 +273,7 @@ class Reporter:
             "startTimestamp": start_ts,
             "duration": duration_ms,
             "errors": [],
-            "stdout": self._extract_stdio(report.capstdout),
-            "stderr": self._extract_stdio(report.capstderr),
+            "stdio": self._extract_stdio(report.capstdout) + self._extract_stdio(report.capstderr),
             "annotations": annotations,
             "attachments": [
                 {
