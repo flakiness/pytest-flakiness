@@ -171,8 +171,7 @@ class RunAttempt(TypedDict):
     parallelIndex: NotRequired[int]
 
     steps: NotRequired[List[TestStep]]
-    stdout: NotRequired[List[STDIOEntry]]
-    stderr: NotRequired[List[STDIOEntry]]
+    stdio: NotRequired[List[STDIOEntry]]
     attachments: NotRequired[List[Attachment]]
 
 

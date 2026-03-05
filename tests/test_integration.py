@@ -334,17 +334,17 @@ def test_stdout_captured(pytester):
     # Assert the test passed
     assert last_attempt["status"] == "passed"
 
-    # Assert stdout exists and has content
-    stdout = last_attempt.get("stdout", [])
-    assert len(stdout) > 0
+    # Assert stdio exists and has content
+    stdio = last_attempt.get("stdio", [])
+    assert len(stdio) > 0
 
-    # Stdout should be a list of STDIOEntry (text entries)
-    assert "text" in stdout[0]
-    stdout_text = stdout[0]["text"]
+    # stdio should be a list of STDIOEntry (text entries)
+    assert "text" in stdio[0]
+    stdio_text = stdio[0]["text"]
 
     # Verify our print statements are captured
-    assert "Hello from test" in stdout_text
-    assert "Multiple lines" in stdout_text
+    assert "Hello from test" in stdio_text
+    assert "Multiple lines" in stdio_text
 
 
 def test_fk_env_variables_propagated(pytester, monkeypatch):
