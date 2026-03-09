@@ -1,3 +1,5 @@
+[![Tests](https://img.shields.io/endpoint?url=https%3A%2F%2Fflakiness.io%2Fapi%2Fbadge%3Finput%3D%257B%2522badgeToken%2522%253A%2522badge-3dbfoCNJLqtm5d4AH1i8XX%2522%257D)](https://flakiness.io/flakiness/pytest-flakiness)
+
 # pytest-flakiness
 
 [](https://www.google.com/search?q=https://badge.fury.io/py/pytest-flakiness)
