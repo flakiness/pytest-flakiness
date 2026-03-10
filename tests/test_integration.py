@@ -317,7 +317,7 @@ def test_exception_saved_as_error(pytester):
 
 
 def test_stdout_captured(pytester):
-    """Test that stdout is properly captured and reported."""
+    """Test that stdout is properly captured via stdio with timestamps."""
     json = generate_json(
         pytester,
         """
@@ -334,17 +334,90 @@ def test_stdout_captured(pytester):
     # Assert the test passed
     assert last_attempt["status"] == "passed"
 
-    # Assert stdout exists and has content
-    stdout = last_attempt.get("stdout", [])
-    assert len(stdout) > 0
+    # Assert stdio exists and has entries
+    stdio = last_attempt.get("stdio", [])
+    assert len(stdio) > 0
 
-    # Stdout should be a list of STDIOEntry (text entries)
-    assert "text" in stdout[0]
-    stdout_text = stdout[0]["text"]
+    # Each entry should have text, dts, and stream fields
+    for entry in stdio:
+        assert "text" in entry
+        assert "dts" in entry
+        assert isinstance(entry["dts"], int)
+        assert entry["dts"] >= 0
+        assert "stream" in entry
+
+    # All entries should be stdout (stream == 1)
+    for entry in stdio:
+        assert entry["stream"] == 1  # STREAM_STDOUT
 
     # Verify our print statements are captured
-    assert "Hello from test" in stdout_text
-    assert "Multiple lines" in stdout_text
+    all_text = "".join(entry["text"] for entry in stdio)
+    assert "Hello from test" in all_text
+    assert "Multiple lines" in all_text
+
+
+def test_stderr_captured(pytester):
+    """Test that stderr is properly captured via stdio with timestamps."""
+    json = generate_json(
+        pytester,
+        """
+        import sys
+        def test_with_stderr():
+            print("error output", file=sys.stderr)
+            assert True
+    """,
+    )
+
+    test = assert_first_test(json)
+    last_attempt = assert_last_attempt(test)
+
+    assert last_attempt["status"] == "passed"
+
+    stdio = last_attempt.get("stdio", [])
+    assert len(stdio) > 0
+
+    # Find stderr entries (stream == 2)
+    stderr_entries = [e for e in stdio if e.get("stream") == 2]
+    assert len(stderr_entries) > 0
+
+    stderr_text = "".join(e["text"] for e in stderr_entries)
+    assert "error output" in stderr_text
+
+
+def test_stdio_interleaved(pytester):
+    """Test that interleaved stdout and stderr are both captured in stdio."""
+    json = generate_json(
+        pytester,
+        """
+        import sys
+        def test_interleaved():
+            print("stdout first")
+            print("stderr message", file=sys.stderr)
+            print("stdout second")
+            assert True
+    """,
+    )
+
+    test = assert_first_test(json)
+    last_attempt = assert_last_attempt(test)
+
+    assert last_attempt["status"] == "passed"
+
+    stdio = last_attempt.get("stdio", [])
+    assert len(stdio) > 0
+
+    stdout_entries = [e for e in stdio if e.get("stream") == 1]
+    stderr_entries = [e for e in stdio if e.get("stream") == 2]
+
+    assert len(stdout_entries) > 0
+    assert len(stderr_entries) > 0
+
+    stdout_text = "".join(e["text"] for e in stdout_entries)
+    stderr_text = "".join(e["text"] for e in stderr_entries)
+
+    assert "stdout first" in stdout_text
+    assert "stdout second" in stdout_text
+    assert "stderr message" in stderr_text
 
 
 def test_fk_env_variables_propagated(pytester, monkeypatch):
