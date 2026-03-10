@@ -25,6 +25,9 @@ GitFilePath = NewType("GitFilePath", str)
 # Constants
 # -----------------------------------------------------------------------------
 
+STREAM_STDOUT = 1
+STREAM_STDERR = 2
+
 CATEGORY_PLAYWRIGHT = "playwright"
 CATEGORY_JUNIT = "junit"
 CATEGORY_PERF = "perf"
@@ -140,6 +143,21 @@ class BufferEntry(TypedDict):
 STDIOEntry = Union[TextEntry, BufferEntry]
 
 
+class TimedTextEntry(TypedDict):
+    stream: NotRequired[int]
+    dts: DurationMS
+    text: str
+
+
+class TimedBufferEntry(TypedDict):
+    stream: NotRequired[int]
+    dts: DurationMS
+    buffer: str
+
+
+TimedSTDIOEntry = Union[TimedTextEntry, TimedBufferEntry]
+
+
 class TestStep(TypedDict):
     """
     Represents a step within a test execution.
@@ -171,8 +189,7 @@ class RunAttempt(TypedDict):
     parallelIndex: NotRequired[int]
 
     steps: NotRequired[List[TestStep]]
-    stdout: NotRequired[List[STDIOEntry]]
-    stderr: NotRequired[List[STDIOEntry]]
+    stdio: NotRequired[List[TimedSTDIOEntry]]
     attachments: NotRequired[List[Attachment]]
 
 
