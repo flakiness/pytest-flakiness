@@ -1,4 +1,4 @@
-name: Run Tests
+name: Tests
 
 on:
   push:
@@ -30,3 +30,10 @@ jobs:
       - name: Run tests
         run: uv run pytest --flakiness-project="flakiness/pytest-flakiness"
 
+      - name: Upload Flakiness report artifact (for Pull Requests from forks)
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.fork
+        uses: actions/upload-artifact@v4
+        with:
+          name: flakiness-report-${{ github.job }}-${{ strategy.job-index }}
+          path: flakiness-report/
+          retention-days: 1
