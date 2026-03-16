@@ -37,3 +37,23 @@ jobs:
           name: flakiness-report-${{ github.job }}-${{ strategy.job-index }}
           path: flakiness-report/
           retention-days: 1
+
+  test-container:
+    name: Run Tests (container)
+    runs-on: ubuntu-latest
+    container: python:3.12
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+
+      - name: Run tests
+        run: uv run pytest --flakiness-project="flakiness/pytest-flakiness"
+        env:
+          FK_ENV_CONTAINER: '1'
