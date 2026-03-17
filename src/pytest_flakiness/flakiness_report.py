@@ -4,10 +4,13 @@ flakiness_report.py
 Python type definitions mirroring the FlakinessReport TypeScript schema.
 """
 
+import sys
 from typing import TypedDict, List, Dict, Literal, NewType, Union
 
-# Note: For Python < 3.11, install typing_extensions: pip install typing_extensions
-from typing import NotRequired
+if sys.version_info >= (3, 11):
+    from typing import NotRequired
+else:
+    from typing_extensions import NotRequired
 
 # -----------------------------------------------------------------------------
 # Branded Types
