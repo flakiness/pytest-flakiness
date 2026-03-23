@@ -233,6 +233,7 @@ class FlakinessReport(TypedDict):
     """The root report object containing all test execution data."""
 
     flakinessProject: NotRequired[str]
+    title: NotRequired[str]
 
     category: str  # 'playwright' | 'junit' | 'perf' | string
 

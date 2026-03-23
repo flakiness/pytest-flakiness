@@ -3,7 +3,12 @@ from pathlib import Path
 from pytest_flakiness.flakiness_report import FlakinessReport, FKTest
 
 
-def generate_json(pytester, str, subdirectory: str | None = None) -> FlakinessReport:
+def generate_json(
+    pytester,
+    str,
+    subdirectory: str | None = None,
+    extra_args: list[str] | None = None,
+) -> FlakinessReport:
     # 1. Create a dummy test file so pytest has something to run
     if subdirectory:
         pytester.mkdir(subdirectory)
@@ -15,11 +20,14 @@ def generate_json(pytester, str, subdirectory: str | None = None) -> FlakinessRe
     output_dir_name = "my_flake_report"
 
     # 3. Run pytest
-    pytester.runpytest_subprocess(
+    args = [
         f"--flakiness-output-dir={output_dir_name}",
         "--flakiness-commit-id=deadbeef",
         f"--flakiness-git-root={Path.cwd()}",
-    )
+    ]
+    if extra_args:
+        args.extend(extra_args)
+    pytester.runpytest_subprocess(*args)
 
     # 5. Construct the path to the expected report file
     # pytester.path points to the temporary root of this test run
@@ -395,3 +403,56 @@ def test_git_file_path_uses_forward_slashes(pytester):
     assert location is not None
     assert location["file"] == "subdir/test_file.py"
     assert "\\" not in location["file"]
+
+
+def test_title_from_cli_option(pytester):
+    """Test that --flakiness-title sets the title in the report."""
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        extra_args=["--flakiness-title=Shard 1/4 — Linux Chrome"],
+    )
+    assert json.get("title") == "Shard 1/4 — Linux Chrome"
+
+
+def test_title_from_env_variable(pytester, monkeypatch):
+    """Test that FLAKINESS_TITLE env variable sets the title in the report."""
+    monkeypatch.setenv("FLAKINESS_TITLE", "My CI Run")
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+    )
+    assert json.get("title") == "My CI Run"
+
+
+def test_title_not_set_by_default(pytester, monkeypatch):
+    """Test that title is absent when not explicitly set and no CI env detected."""
+    monkeypatch.delenv("FLAKINESS_TITLE", raising=False)
+    monkeypatch.delenv("GITHUB_WORKFLOW", raising=False)
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+    )
+    assert "title" not in json
+
+
+def test_title_auto_detected_from_github_workflow(pytester, monkeypatch):
+    """Test that title is auto-detected from GITHUB_WORKFLOW env variable."""
+    monkeypatch.setenv("GITHUB_WORKFLOW", "CI Tests")
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+    )
+    assert json.get("title") == "CI Tests"
