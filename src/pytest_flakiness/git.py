@@ -1,3 +1,4 @@
+import os
 import subprocess
 from pathlib import Path
 
@@ -23,3 +24,12 @@ def get_git_root() -> Path | None:
     """Attempts to get the absolute path to the git root directory."""
     result = _run_git_cmd(["rev-parse", "--show-toplevel"])
     return None if result is None else Path(result)
+
+
+def get_ci_run_title() -> str | None:
+    """Auto-detects a human-readable CI run title from the environment."""
+    # GitHub Actions
+    title = os.environ.get("GITHUB_WORKFLOW", "").strip()
+    if title:
+        return title
+    return None

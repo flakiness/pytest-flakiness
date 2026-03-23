@@ -322,6 +322,7 @@ class Reporter:
         end_time = int(time.time() * 1000)
 
         flakiness_project: str | None = session.config.getoption("flakiness_project")
+        flakiness_title: str | None = session.config.getoption("flakiness_title") or None
 
         # Cast strictly to the FlakinessReport TypedDict
         report_payload: FlakinessReport = {
@@ -333,6 +334,9 @@ class Reporter:
             "tests": list(self.tests.values()),
             "suites": [],
         }
+
+        if flakiness_title:
+            report_payload["title"] = flakiness_title
 
         if flakiness_project:
             report_payload["flakinessProject"] = flakiness_project

@@ -3,7 +3,7 @@ from typing import List
 import pytest
 
 from pathlib import Path
-from .git import get_git_commit, get_git_root
+from .git import get_git_commit, get_git_root, get_ci_run_title
 
 # Import your types from the sibling file
 from .reporter import Reporter
@@ -51,6 +51,13 @@ def pytest_addoption(parser):
         dest="flakiness_git_root",
         default=os.environ.get("FLAKINESS_GIT_ROOT", get_git_root()),
         help="The root directory to normalize all paths. Can also be set via FLAKINESS_GIT_ROOT env variable. Defaults to git repository root.",
+    )
+    group.addoption(
+        "--flakiness-title",
+        action="store",
+        dest="flakiness_title",
+        default=os.environ.get("FLAKINESS_TITLE", get_ci_run_title()),
+        help="Optional human-readable report title. Typically used to name a CI run, matrix shard, or other execution group. Can also be set via FLAKINESS_TITLE env variable. Auto-detected from CI environment if not set.",
     )
     group.addoption(
         "--flakiness-project",
