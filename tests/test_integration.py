@@ -432,9 +432,8 @@ def test_title_from_env_variable(pytester, monkeypatch):
 
 
 def test_title_not_set_by_default(pytester, monkeypatch):
-    """Test that title is absent when not explicitly set and no CI env detected."""
+    """Test that title is absent when not explicitly set."""
     monkeypatch.delenv("FLAKINESS_TITLE", raising=False)
-    monkeypatch.delenv("GITHUB_WORKFLOW", raising=False)
     json = generate_json(
         pytester,
         """
@@ -443,16 +442,3 @@ def test_title_not_set_by_default(pytester, monkeypatch):
     """,
     )
     assert "title" not in json
-
-
-def test_title_auto_detected_from_github_workflow(pytester, monkeypatch):
-    """Test that title is auto-detected from GITHUB_WORKFLOW env variable."""
-    monkeypatch.setenv("GITHUB_WORKFLOW", "CI Tests")
-    json = generate_json(
-        pytester,
-        """
-        def test_dummy():
-            assert True
-    """,
-    )
-    assert json.get("title") == "CI Tests"
