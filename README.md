@@ -109,6 +109,7 @@ All options can be set via environment variables or command-line flags:
 | Flag | Environment Variable | Description |
 |------|---------------------|-------------|
 | `--flakiness-name` | `FLAKINESS_NAME` | Name for this environment. Defaults to `pytest` |
+| `--flakiness-title` | `FLAKINESS_TITLE` | Optional human-readable report title. Typically used to name a CI run, matrix shard, or other execution group |
 | `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | Local directory to save JSON report. Defaults to `flakiness-report` |
 | `--flakiness-project` | `FLAKINESS_PROJECT` | Flakiness.io project identifier (e.g. `org/project`). Required for GitHub OIDC authentication |
 | `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | Your Flakiness.io access token for upload |
