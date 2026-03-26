@@ -1,5 +1,6 @@
 import time
 import json
+import sys
 import pytest
 from _pytest._code.code import ReprFileLocation, ReprTraceback
 import platform
@@ -26,7 +27,9 @@ from .flakiness_report import (
     RunAttempt,
     Environment,
     Location,
-    STDIOEntry,
+    TimedSTDIOEntry,
+    STREAM_STDOUT,
+    STREAM_STDERR,
 )
 
 from .uploader import FileAttachment, upload_report
@@ -48,6 +51,32 @@ def _calculate_file_hash(path: Path) -> str:
     return hasher.hexdigest()
 
 
+class TimedWriter:
+    """
+    A file-like wrapper that records timestamped entries for each write() call
+    while forwarding to the original stream. Multiple TimedWriter instances
+    can share a single entries list to preserve true write ordering.
+    """
+
+    def __init__(self, original, stream_type: int, entries: list[tuple[int, int, str]]):
+        self._original = original
+        self._stream_type = stream_type
+        self._entries = entries
+
+    def write(self, text: str) -> int:
+        if text:  # Skip empty writes
+            ts = int(time.time() * 1000)
+            self._entries.append((ts, self._stream_type, text))
+        return self._original.write(text)
+
+    def flush(self):
+        return self._original.flush()
+
+    def __getattr__(self, name):
+        # Forward any other attribute access to the original stream
+        return getattr(self._original, name)
+
+
 class Reporter:
     def __init__(self, commit_id: str, git_root: Path, pytest_root: Path):
         self.git_root = git_root.resolve()
@@ -56,6 +85,7 @@ class Reporter:
         self.start_time = int(time.time() * 1000)
         self.file_attachments: dict[str, FileAttachment] = {}
         self.tests = {}
+        self._stdio_entries: dict[str, list[tuple[int, int, str]]] = {}  # nodeid -> [(ts_ms, stream, text)]
 
     def parse_user_properties(
         self, report: pytest.TestReport
@@ -110,6 +140,26 @@ class Reporter:
 
         return annotations, attachments
 
+    @pytest.hookimpl(hookwrapper=True, trylast=True)
+    def pytest_runtest_call(self, item: pytest.Item) -> None:
+        """
+        Wraps stdout/stderr with TimedWriter during the test call phase.
+        trylast=True ensures we run inside pytest's capture, so we can
+        intercept writes with timestamps while capture still collects content.
+        Both writers share a single entries list to preserve true write order.
+        """
+        saved_stdout = sys.stdout
+        saved_stderr = sys.stderr
+        entries: list[tuple[int, int, str]] = []
+        sys.stdout = TimedWriter(saved_stdout, STREAM_STDOUT, entries)  # type: ignore[assignment]
+        sys.stderr = TimedWriter(saved_stderr, STREAM_STDERR, entries)  # type: ignore[assignment]
+        try:
+            yield
+        finally:
+            sys.stdout = saved_stdout
+            sys.stderr = saved_stderr
+            self._stdio_entries[item.nodeid] = entries
+
     def parse_test_title(self, nodeid: str):
         """
         Removes the filename from the nodeid.
@@ -124,16 +174,29 @@ class Reporter:
             return parts[1]
         return nodeid  # Fallback (shouldn't happen for valid tests)
 
-    def _extract_stdio(self, content: str) -> list[STDIOEntry]:
+    def _build_stdio(
+        self, nodeid: str, start_ts: int
+    ) -> list[TimedSTDIOEntry]:
         """
-        Converts captured string content into the schema format.
+        Builds TimedSTDIOEntry list from captured timestamped entries.
+        Uses real timestamps with delta encoding (dts from previous entry).
         """
-        if not content:
+        raw_entries = self._stdio_entries.pop(nodeid, [])
+        if not raw_entries:
             return []
 
-        # We assume text for standard print().
-        # If you needed binary checks, you'd handle "buffer" here.
-        return [{"text": content}]
+        stdio: list[TimedSTDIOEntry] = []
+        prev_ts = start_ts
+        for ts_ms, stream, text in raw_entries:
+            dts = max(0, ts_ms - prev_ts)
+            entry: TimedSTDIOEntry = {
+                "stream": stream,
+                "dts": DurationMS(dts),
+                "text": text,
+            }
+            stdio.append(entry)
+            prev_ts = ts_ms
+        return stdio
 
     def parse_pytest_error(self, report: pytest.TestReport) -> ReportError | None:
         """
@@ -273,8 +336,7 @@ class Reporter:
             "startTimestamp": start_ts,
             "duration": duration_ms,
             "errors": [],
-            "stdout": self._extract_stdio(report.capstdout),
-            "stderr": self._extract_stdio(report.capstderr),
+            "stdio": self._build_stdio(report.nodeid, start_ts),
             "annotations": annotations,
             "attachments": [
                 {
