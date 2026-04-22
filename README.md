@@ -9,9 +9,8 @@
 The official [Flakiness.io](https://flakiness.io) reporter for **pytest**.
 
 > [!TIP]
-> Report demo is available at https://flakiness.io/flakiness/pytest-flakiness
-> 
-> Supported features: [features.md](./features.md)
+> * Report demo is available at https://flakiness.io/flakiness/pytest-flakiness
+> * Supported features: [features.md](./features.md)
 
 ## Installation
 
