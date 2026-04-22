@@ -80,6 +80,13 @@ def pytest_addoption(parser):
         default=os.environ.get("FLAKINESS_ENDPOINT", "https://flakiness.io"),
         help="Flakiness.io service endpoint. Can also be set via FLAKINESS_ENDPOINT env variable. Defaults to https://flakiness.io",
     )
+    group.addoption(
+        "--flakiness-disable-upload",
+        action="store_true",
+        dest="flakiness_disable_upload",
+        default=bool(os.environ.get("FLAKINESS_DISABLE_UPLOAD")),
+        help="Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory. Can also be set via FLAKINESS_DISABLE_UPLOAD env variable.",
+    )
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)

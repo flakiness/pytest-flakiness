@@ -27,5 +27,5 @@ Status of [Flakiness Report Features](https://github.com/flakiness/flakiness-rep
 | 20 | Errors support | ✅ | pytest has no native soft-assertion / multi-error capture. Single errors are captured in full. |
 | 21 | Unattributed errors | ❌ | `unattributedErrors` is never populated. Collection / setup errors that aren't tied to a specific test are not surfaced at report level. |
 | 22 | Source locations | ✅ | Populated on tests, errors, and skip annotations. pytest's `Mark` objects don't carry source locations, so marker annotations don't have one. |
-| 23 | Auto-upload | ⚠️ | Supports GitHub OIDC and `FLAKINESS_ACCESS_TOKEN`. Missing `FLAKINESS_DISABLE_UPLOAD` to opt-out.. |
+| 23 | Auto-upload | ✅ | Supports GitHub OIDC, `FLAKINESS_ACCESS_TOKEN`, and `FLAKINESS_DISABLE_UPLOAD` / `--flakiness-disable-upload` to opt-out. |
 | 24 | CPU / RAM telemetry | ❌ | System telemetry is not collected. |

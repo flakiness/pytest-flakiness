@@ -24,6 +24,7 @@ def generate_json(
         f"--flakiness-output-dir={output_dir_name}",
         "--flakiness-commit-id=deadbeef",
         f"--flakiness-git-root={Path.cwd()}",
+        "--flakiness-disable-upload",
     ]
     if extra_args:
         args.extend(extra_args)
