@@ -11,6 +11,10 @@ from .flakiness_report import Annotation
 import os
 
 
+def _parse_env_flag(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+
+
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Called when the test session begins."""
@@ -84,7 +88,7 @@ def pytest_addoption(parser):
         "--flakiness-disable-upload",
         action="store_true",
         dest="flakiness_disable_upload",
-        default=bool(os.environ.get("FLAKINESS_DISABLE_UPLOAD")),
+        default=_parse_env_flag("FLAKINESS_DISABLE_UPLOAD"),
         help="Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory. Can also be set via FLAKINESS_DISABLE_UPLOAD env variable.",
     )
 
