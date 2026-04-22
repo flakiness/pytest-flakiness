@@ -115,6 +115,7 @@ All options can be set via environment variables or command-line flags:
 | `--flakiness-project` | `FLAKINESS_PROJECT` | Flakiness.io project identifier (e.g. `org/project`). Required for GitHub OIDC authentication |
 | `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | Your Flakiness.io access token for upload |
 | `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | Flakiness.io service endpoint. Defaults to `https://flakiness.io` |
+| `--flakiness-disable-upload` | `FLAKINESS_DISABLE_UPLOAD` | Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory |
 
 ### Custom Environment Data
 

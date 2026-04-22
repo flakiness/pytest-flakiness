@@ -341,30 +341,33 @@ class Reporter:
         if flakiness_project:
             report_payload["flakinessProject"] = flakiness_project
 
-        token = session.config.getoption("flakiness_access_token") or None
-        endpoint = session.config.getoption("flakiness_endpoint")
+        disable_upload: bool = session.config.getoption("flakiness_disable_upload")
 
-        # If no access token, attempt GitHub OIDC authentication
-        github_oidc = GithubOIDC.init_from_env()
-        if token is None and github_oidc is not None:
-            if not flakiness_project:
-                is_ci = os.environ.get("CI")
-                if is_ci:
-                    print(
-                        "\n[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
-                    )
-            else:
-                try:
-                    token = github_oidc.fetch_token(flakiness_project)
-                except Exception as e:
-                    print(
-                        f"\n[Flakiness] Error fetching GitHub OIDC token: {e}"
-                    )
+        if not disable_upload:
+            token = session.config.getoption("flakiness_access_token") or None
+            endpoint = session.config.getoption("flakiness_endpoint")
 
-        if token is not None:
-            upload_report(
-                report_payload, list(self.file_attachments.values()), endpoint, token
-            )
+            # If no access token, attempt GitHub OIDC authentication
+            github_oidc = GithubOIDC.init_from_env()
+            if token is None and github_oidc is not None:
+                if not flakiness_project:
+                    is_ci = os.environ.get("CI")
+                    if is_ci:
+                        print(
+                            "\n[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
+                        )
+                else:
+                    try:
+                        token = github_oidc.fetch_token(flakiness_project)
+                    except Exception as e:
+                        print(
+                            f"\n[Flakiness] Error fetching GitHub OIDC token: {e}"
+                        )
+
+            if token is not None:
+                upload_report(
+                    report_payload, list(self.file_attachments.values()), endpoint, token
+                )
 
         output_dir: str | None = session.config.getoption("flakiness_output_dir")
         if output_dir:
