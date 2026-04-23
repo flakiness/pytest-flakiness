@@ -7,6 +7,7 @@ import shutil
 import mimetypes
 import hashlib
 import os
+from urllib.parse import quote
 
 from pathlib import Path
 from typing import NewType, cast, Any, Dict
@@ -423,7 +424,7 @@ def _azure_devops_url() -> str | None:
     if not collection_uri or not project or not build_id:
         return None
     base = collection_uri if collection_uri.endswith("/") else collection_uri + "/"
-    return f"{base}{project}/_build/results?buildId={build_id}"
+    return f"{base}{quote(project, safe='')}/_build/results?buildId={build_id}"
 
 
 def _write_report(
