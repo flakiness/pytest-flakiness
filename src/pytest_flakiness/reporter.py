@@ -7,6 +7,7 @@ import shutil
 import mimetypes
 import hashlib
 import os
+from urllib.parse import quote
 
 from pathlib import Path
 from typing import NewType, cast, Any, Dict
@@ -341,6 +342,10 @@ class Reporter:
         if flakiness_project:
             report_payload["flakinessProject"] = flakiness_project
 
+        ci_run_url = detect_ci_run_url()
+        if ci_run_url:
+            report_payload["url"] = ci_run_url
+
         disable_upload: bool = session.config.getoption("flakiness_disable_upload")
 
         if not disable_upload:
@@ -386,6 +391,40 @@ def create_user_data() -> Dict[str, Any]:
             clean_key = key[len(prefix) :].lower()
             user_data[clean_key] = value
     return user_data
+
+
+def detect_ci_run_url() -> str | None:
+    return (
+        _github_actions_url()
+        or _azure_devops_url()
+        or os.environ.get("CI_JOB_URL")
+        or os.environ.get("BUILD_URL")
+    )
+
+
+def _github_actions_url() -> str | None:
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    run_id = os.environ.get("GITHUB_RUN_ID")
+    if not repo or not run_id:
+        return None
+    server = os.environ.get("GITHUB_SERVER_URL") or "https://github.com"
+    url = f"{server}/{repo}/actions/runs/{run_id}"
+    params = []
+    attempt = os.environ.get("GITHUB_RUN_ATTEMPT")
+    if attempt:
+        params.append(f"attempt={attempt}")
+    params.append("check_suite_focus=true")
+    return url + "?" + "&".join(params)
+
+
+def _azure_devops_url() -> str | None:
+    collection_uri = os.environ.get("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI")
+    project = os.environ.get("SYSTEM_TEAMPROJECT")
+    build_id = os.environ.get("BUILD_BUILDID")
+    if not collection_uri or not project or not build_id:
+        return None
+    base = collection_uri if collection_uri.endswith("/") else collection_uri + "/"
+    return f"{base}{quote(project, safe='')}/_build/results?buildId={build_id}"
 
 
 def _write_report(

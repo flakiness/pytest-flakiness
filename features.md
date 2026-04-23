@@ -5,7 +5,7 @@ Status of [Flakiness Report Features](https://github.com/flakiness/flakiness-rep
 
 | # | Feature | Status | Notes |
 |---|---------|--------|-------|
-| 1 | Report metadata | ⚠️ | Missing: CI run `url`, `configPath`, `relatedCommitIds`. |
+| 1 | Report metadata | ✅ | `url` auto-detected from GitHub Actions / Azure DevOps / GitLab CI (`CI_JOB_URL`) / Jenkins (`BUILD_URL`). `configPath` N/A (pytest has no single config file concept). `relatedCommitIds` not populated. |
 | 2 | Environment metadata | ✅ | `name`, `osName`, `osVersion`, `osArch`, `python_version` |
 | 3 | Multiple environments | N/A | pytest has no native concept of multi-project execution akin to Playwright/Vitest. A single `environments[]` entry is emitted |
 | 4 | Custom environments (`FK_ENV_*`) | ✅ | Supports `FK_ENV_*` envs. |
