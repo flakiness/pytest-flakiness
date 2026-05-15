@@ -225,6 +225,32 @@ class Source(TypedDict):
 
 
 # -----------------------------------------------------------------------------
+# Producer / Runtime metadata
+# -----------------------------------------------------------------------------
+
+
+class GeneratedBy(TypedDict):
+    """Identifies the tool that produced the report (the reporter package)."""
+
+    name: str
+    version: str
+
+
+class TestRunner(TypedDict):
+    """Identifies the underlying test runner whose execution the report describes."""
+
+    name: str
+    version: str
+
+
+class Runtime(TypedDict):
+    """Identifies the language runtime executing the test process."""
+
+    name: str
+    version: str
+
+
+# -----------------------------------------------------------------------------
 # Root Report
 # -----------------------------------------------------------------------------
 
@@ -242,6 +268,10 @@ class FlakinessReport(TypedDict):
 
     configPath: NotRequired[GitFilePath]
     url: NotRequired[str]
+
+    generatedBy: NotRequired[GeneratedBy]
+    testRunner: NotRequired[TestRunner]
+    runtime: NotRequired[Runtime]
 
     environments: List[Environment]
     suites: List[Suite]
