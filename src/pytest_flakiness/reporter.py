@@ -2,6 +2,7 @@ import time
 import json
 import pytest
 from _pytest._code.code import ReprFileLocation, ReprTraceback
+import importlib.metadata
 import platform
 import shutil
 import mimetypes
@@ -18,6 +19,9 @@ from .flakiness_report import (
     CommitId,
     AttachmentId,
     DurationMS,
+    GeneratedBy,
+    Runtime,
+    TestRunner,
     UnixTimestampMS,
     ReportError,
     FlakinessReport,
@@ -335,6 +339,23 @@ class Reporter:
             "tests": list(self.tests.values()),
             "suites": [],
         }
+
+        # Producer / runtime provenance. `importlib.metadata.version` raises if the
+        # package was loaded without `pip install` (e.g. via `-p` or conftest); in that
+        # case we just omit `generatedBy`.
+        try:
+            report_payload["generatedBy"] = GeneratedBy(
+                name="pytest-flakiness",
+                version=importlib.metadata.version("pytest-flakiness"),
+            )
+        except importlib.metadata.PackageNotFoundError:
+            pass
+        report_payload["testRunner"] = TestRunner(name="pytest", version=pytest.__version__)
+        # `python_implementation()` returns 'CPython', 'PyPy', 'Jython', etc.
+        report_payload["runtime"] = Runtime(
+            name=platform.python_implementation().lower(),
+            version=platform.python_version(),
+        )
 
         if flakiness_title:
             report_payload["title"] = flakiness_title
