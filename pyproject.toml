@@ -1,6 +1,6 @@
 [project]
 name = "pytest-flakiness"
-version = "0.18.0"
+version = "1.0.0"
 description = "Pytest reporter for Flakiness.io"
 readme = "README.md"
 authors = [
