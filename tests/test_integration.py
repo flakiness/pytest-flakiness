@@ -453,6 +453,26 @@ def test_title_not_set_by_default(pytester, monkeypatch):
     assert "title" not in json
 
 
+def test_env_is_frozen_at_session_start(pytester, monkeypatch):
+    """Mutating a FLAKINESS_* env var *during* the test run must not change the
+    resolved config. It is snapshotted once, before any test executes, so the
+    report stays consistent with the configuration the session started with."""
+    monkeypatch.setenv("FLAKINESS_TITLE", "Original Title")
+    json = generate_json(
+        pytester,
+        """
+        import os
+
+        def test_mutates_env():
+            # A user test mutating the environment must not retroactively change
+            # which title (or endpoint/token/output dir) the reporter uses.
+            os.environ["FLAKINESS_TITLE"] = "Mutated Title"
+            assert True
+    """,
+    )
+    assert json.get("title") == "Original Title"
+
+
 def test_name_from_ini(pytester, monkeypatch):
     """Test that flakiness_name can be set from an ini file."""
     monkeypatch.delenv("FLAKINESS_NAME", raising=False)

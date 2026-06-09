@@ -14,6 +14,7 @@ control and should never hold secrets.
 """
 
 import os
+from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Union
 
 from .git import get_git_commit, get_git_root
@@ -173,3 +174,40 @@ def resolve(config, dest: str) -> Any:
     # 4. Built-in default (possibly computed lazily).
     default = opt["default"]
     return default() if callable(default) else default
+
+
+@dataclass(frozen=True)
+class FlakinessConfig:
+    """An immutable snapshot of every resolved flakiness option.
+
+    Resolving all options up front (before any test runs) keeps configuration
+    stable for the whole session. In particular it freezes the environment
+    variables: tests that mutate `FLAKINESS_*` via `monkeypatch.setenv` (or
+    otherwise) cannot retroactively change where/whether the report is uploaded
+    when `pytest_sessionfinish` runs.
+    """
+
+    output_dir: Optional[str]
+    commit_id: Optional[str]
+    name: str
+    git_root: Optional[str]
+    title: Optional[str]
+    project: Optional[str]
+    access_token: Optional[str]
+    endpoint: str
+    disable_upload: bool
+
+
+def resolve_config(config) -> FlakinessConfig:
+    """Resolve every flakiness option once, capturing a session-stable snapshot."""
+    return FlakinessConfig(
+        output_dir=resolve(config, "flakiness_output_dir"),
+        commit_id=resolve(config, "flakiness_commit_id"),
+        name=resolve(config, "flakiness_name"),
+        git_root=resolve(config, "flakiness_git_root"),
+        title=resolve(config, "flakiness_title"),
+        project=resolve(config, "flakiness_project"),
+        access_token=resolve(config, "flakiness_access_token"),
+        endpoint=resolve(config, "flakiness_endpoint"),
+        disable_upload=resolve(config, "flakiness_disable_upload"),
+    )

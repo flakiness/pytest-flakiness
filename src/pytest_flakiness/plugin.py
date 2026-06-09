@@ -7,17 +7,19 @@ from pathlib import Path
 # Import your types from the sibling file
 from .reporter import Reporter
 from .flakiness_report import Annotation
-from .options import add_options, resolve
+from .options import add_options, resolve_config
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Called when the test session begins."""
-    commit_id = resolve(session.config, "flakiness_commit_id")
-    git_root = resolve(session.config, "flakiness_git_root")
+    # Resolve the full configuration once, up front, so it stays stable for the
+    # whole session (in particular, before any test can mutate FLAKINESS_* env
+    # variables). The Reporter reads from this snapshot at session finish.
+    config = resolve_config(session.config)
 
-    if git_root and commit_id:
-        reporter = Reporter(commit_id, Path(git_root), session.config.rootpath)
+    if config.git_root and config.commit_id:
+        reporter = Reporter(config, Path(config.git_root), session.config.rootpath)
         session.config.pluginmanager.register(reporter, name="flakiness_reporter")
 
 
