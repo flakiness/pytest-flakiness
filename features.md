@@ -20,12 +20,12 @@ Status of [Flakiness Report Features](https://github.com/flakiness/flakiness-rep
 | 13 | Annotations | ✅ | The plugin emits `skip` (with reason + location), turns any marker-with-args into a typed annotation (e.g. `@pytest.mark.owner("johndoe")`), and maps `record_property(key, value)` entries to annotations. |
 | 14 | Tags | ✅ | Arg-less markers (e.g. `@pytest.mark.smoke`) become tags. |
 | 15 | `parallelIndex` | N/A | pytest has no native parallelism. |
-| 16 | `FLAKINESS_TITLE` | ✅ | Honored via `--flakiness-title` / `FLAKINESS_TITLE`. |
-| 17 | `FLAKINESS_OUTPUT_DIR` | ✅ | Honored via `--flakiness-output-dir` / `FLAKINESS_OUTPUT_DIR`, defaults to `flakiness-report`. |
+| 16 | `FLAKINESS_TITLE` | ✅ | Honored via `--flakiness-title` / `FLAKINESS_TITLE` / `flakiness_title` ini option. |
+| 17 | `FLAKINESS_OUTPUT_DIR` | ✅ | Honored via `--flakiness-output-dir` / `FLAKINESS_OUTPUT_DIR` / `flakiness_output_dir` ini option, defaults to `flakiness-report`. |
 | 18 | Sources | ❌ | Top-level `sources[]` is never populated. Since there are no steps, this might not be needed at the moment. |
 | 19 | Error snippets | ✅ | pytest emits only plain-text excerpts (no ANSI highlighting) |
 | 20 | Errors support | ✅ | pytest has no native soft-assertion / multi-error capture. Single errors are captured in full. |
 | 21 | Unattributed errors | ❌ | `unattributedErrors` is never populated. Collection / setup errors that aren't tied to a specific test are not surfaced at report level. |
 | 22 | Source locations | ✅ | Populated on tests, errors, and skip annotations. pytest's `Mark` objects don't carry source locations, so marker annotations don't have one. |
-| 23 | Auto-upload | ✅ | Supports GitHub OIDC, `FLAKINESS_ACCESS_TOKEN`, and `FLAKINESS_DISABLE_UPLOAD` / `--flakiness-disable-upload` to opt-out. |
+| 23 | Auto-upload | ✅ | Supports GitHub OIDC, `FLAKINESS_ACCESS_TOKEN`, and `FLAKINESS_DISABLE_UPLOAD` / `--flakiness-disable-upload` / `flakiness_disable_upload` ini option to opt-out. |
 | 24 | CPU / RAM telemetry | ❌ | System telemetry is not collected. |

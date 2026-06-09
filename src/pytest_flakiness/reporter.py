@@ -13,6 +13,8 @@ from urllib.parse import quote
 from pathlib import Path
 from typing import NewType, cast, Any, Dict
 
+from .options import resolve
+
 # Import your types from the sibling file
 from .flakiness_report import (
     Annotation,
@@ -326,12 +328,12 @@ class Reporter:
         # 2. Build Final Report
         end_time = int(time.time() * 1000)
 
-        flakiness_project: str | None = session.config.getoption("flakiness_project")
-        flakiness_title: str | None = session.config.getoption("flakiness_title") or None
+        flakiness_project: str | None = resolve(session.config, "flakiness_project")
+        flakiness_title: str | None = resolve(session.config, "flakiness_title") or None
 
         # Cast strictly to the FlakinessReport TypedDict
         report_payload: FlakinessReport = {
-            "category": session.config.getoption("flakiness_name"),
+            "category": resolve(session.config, "flakiness_name"),
             "commitId": self.commit_id,
             "startTimestamp": UnixTimestampMS(self.start_time),
             "duration": DurationMS(end_time - self.start_time),
@@ -367,11 +369,11 @@ class Reporter:
         if ci_run_url:
             report_payload["url"] = ci_run_url
 
-        disable_upload: bool = session.config.getoption("flakiness_disable_upload")
+        disable_upload: bool = resolve(session.config, "flakiness_disable_upload")
 
         if not disable_upload:
-            token = session.config.getoption("flakiness_access_token") or None
-            endpoint = session.config.getoption("flakiness_endpoint")
+            token = resolve(session.config, "flakiness_access_token") or None
+            endpoint = resolve(session.config, "flakiness_endpoint")
 
             # If no access token, attempt GitHub OIDC authentication
             github_oidc = GithubOIDC.init_from_env()
@@ -395,7 +397,7 @@ class Reporter:
                     report_payload, list(self.file_attachments.values()), endpoint, token
                 )
 
-        output_dir: str | None = session.config.getoption("flakiness_output_dir")
+        output_dir: str | None = resolve(session.config, "flakiness_output_dir")
         if output_dir:
             _write_report(report_payload, self.file_attachments, Path(output_dir))
 
