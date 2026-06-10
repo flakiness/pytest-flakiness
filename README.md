@@ -47,6 +47,17 @@ flakiness show
 > flakiness-report/
 > ```
 
+### Project Configuration
+
+Options that are stable across a project are best set once in your pytest config instead of being passed on every run. With pytest 9, add them to the `[tool.pytest]` table in `pyproject.toml`:
+
+```toml
+# pyproject.toml
+[tool.pytest]
+flakiness_project = "my-org/my-project"
+```
+
+The same keys work in `[pytest]` of `pytest.ini` / `tox.ini` / `setup.cfg`. See [All Configuration Options](#all-configuration-options) for the full list — CLI flags and `FLAKINESS_*` environment variables still override these per run.
 
 If Flakiness Access Token is passed, then the reporter will upload the report to Flakiness.io.
 You will see a confirmation in your terminal summary:
