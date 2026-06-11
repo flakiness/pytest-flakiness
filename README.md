@@ -47,6 +47,17 @@ flakiness show
 > flakiness-report/
 > ```
 
+If Flakiness Access Token is passed, then the reporter will upload the report to Flakiness.io.
+You will see a confirmation in your terminal summary:
+
+```text
+...
+PASSED [100%]
+==============================
+✅ [Flakiness] Report uploaded: https://flakiness.io/your_org/your_proj/run/1
+==============================
+```
+
 ### Project Configuration
 
 Options that are stable across a project are best set once in your pytest config instead of being passed on every run. With pytest 9, add them to the `[tool.pytest]` table in `pyproject.toml`:
@@ -58,17 +69,6 @@ flakiness_project = "my-org/my-project"
 ```
 
 The same keys work in `[pytest]` of `pytest.ini` / `tox.ini` / `setup.cfg`. See [All Configuration Options](#all-configuration-options) for the full list — CLI flags and `FLAKINESS_*` environment variables still override these per run.
-
-If Flakiness Access Token is passed, then the reporter will upload the report to Flakiness.io.
-You will see a confirmation in your terminal summary:
-
-```text
-...
-PASSED [100%]
-==============================
-✅ [Flakiness] Report uploaded: https://flakiness.io/your_org/your_proj/run/1
-==============================
-```
 
 ## Uploading Reports to Flakiness.io
 

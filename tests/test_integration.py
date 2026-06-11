@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from pytest_flakiness.flakiness_report import FlakinessReport, FKTest
+from pytest_flakiness.options import resolve
 
 
 def generate_json(
@@ -562,3 +563,18 @@ def test_cli_overrides_ini(pytester, monkeypatch):
         ini="[pytest]\nflakiness_title = Title From Ini\n",
     )
     assert json.get("title") == "Title From CLI"
+
+
+def test_disable_upload_from_ini(pytester, monkeypatch):
+    """The boolean flakiness_disable_upload option is honored from an ini file.
+
+    Whether the report was uploaded is not observable from the JSON report, so
+    this checks the resolved value directly. Also covers env > ini for booleans:
+    a 'false' env variable overrides an ini 'true'."""
+    monkeypatch.delenv("FLAKINESS_DISABLE_UPLOAD", raising=False)
+    pytester.makeini("[pytest]\nflakiness_disable_upload = true\n")
+    config = pytester.parseconfigure()
+    assert resolve(config, "flakiness_disable_upload") is True
+
+    monkeypatch.setenv("FLAKINESS_DISABLE_UPLOAD", "false")
+    assert resolve(config, "flakiness_disable_upload") is False

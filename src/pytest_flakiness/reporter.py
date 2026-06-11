@@ -56,11 +56,12 @@ def _calculate_file_hash(path: Path) -> str:
 
 
 class Reporter:
-    def __init__(self, config: FlakinessConfig, git_root: Path, pytest_root: Path):
+    def __init__(self, config: FlakinessConfig, pytest_root: Path):
+        assert config.git_root and config.commit_id
         self.config = config
-        self.git_root = git_root.resolve()
+        self.git_root = Path(config.git_root).resolve()
         self.pytest_root = pytest_root
-        self.commit_id = CommitId(config.commit_id or "")
+        self.commit_id = CommitId(config.commit_id)
         self.start_time = int(time.time() * 1000)
         self.file_attachments: dict[str, FileAttachment] = {}
         self.tests = {}

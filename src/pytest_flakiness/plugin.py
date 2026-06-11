@@ -2,8 +2,6 @@ from typing import List
 
 import pytest
 
-from pathlib import Path
-
 # Import your types from the sibling file
 from .reporter import Reporter
 from .flakiness_report import Annotation
@@ -19,7 +17,7 @@ def pytest_sessionstart(session: pytest.Session) -> None:
     config = resolve_config(session.config)
 
     if config.git_root and config.commit_id:
-        reporter = Reporter(config, Path(config.git_root), session.config.rootpath)
+        reporter = Reporter(config, session.config.rootpath)
         session.config.pluginmanager.register(reporter, name="flakiness_reporter")
 
 
