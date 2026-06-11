@@ -14,17 +14,27 @@ The official [Flakiness.io](https://flakiness.io) reporter for **pytest**.
 
 ## Installation
 
-Install using **uv** (recommended):
+1. Install using **uv** (recommended):
 
-```bash
-uv add --dev pytest-flakiness
-```
+   ```bash
+   uv add --dev pytest-flakiness
+   ```
 
-Or via standard pip:
+   Or via standard pip:
 
-```bash
-pip install pytest-flakiness
-```
+   ```bash
+   pip install pytest-flakiness
+   ```
+
+2. Set your Flakiness.io project identifier (`org/project`) in your pytest config:
+
+   ```toml
+   # pyproject.toml
+   [tool.pytest]
+   flakiness_project = "my-org/my-project"
+   ```
+
+   See [Project Configuration](#project-configuration) for other config file formats, or use the `--flakiness-project` flag / `FLAKINESS_PROJECT` env variable instead.
 
 ## Usage
 
