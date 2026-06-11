@@ -13,6 +13,8 @@ from urllib.parse import quote
 from pathlib import Path
 from typing import NewType, cast, Any, Dict
 
+from .options import FlakinessConfig
+
 # Import your types from the sibling file
 from .flakiness_report import (
     Annotation,
@@ -54,10 +56,12 @@ def _calculate_file_hash(path: Path) -> str:
 
 
 class Reporter:
-    def __init__(self, commit_id: str, git_root: Path, pytest_root: Path):
-        self.git_root = git_root.resolve()
+    def __init__(self, config: FlakinessConfig, pytest_root: Path):
+        assert config.git_root and config.commit_id
+        self.config = config
+        self.git_root = Path(config.git_root).resolve()
         self.pytest_root = pytest_root
-        self.commit_id = CommitId(commit_id)
+        self.commit_id = CommitId(config.commit_id)
         self.start_time = int(time.time() * 1000)
         self.file_attachments: dict[str, FileAttachment] = {}
         self.tests = {}
@@ -326,12 +330,12 @@ class Reporter:
         # 2. Build Final Report
         end_time = int(time.time() * 1000)
 
-        flakiness_project: str | None = session.config.getoption("flakiness_project")
-        flakiness_title: str | None = session.config.getoption("flakiness_title") or None
+        flakiness_project: str | None = self.config.project
+        flakiness_title: str | None = self.config.title or None
 
         # Cast strictly to the FlakinessReport TypedDict
         report_payload: FlakinessReport = {
-            "category": session.config.getoption("flakiness_name"),
+            "category": self.config.name,
             "commitId": self.commit_id,
             "startTimestamp": UnixTimestampMS(self.start_time),
             "duration": DurationMS(end_time - self.start_time),
@@ -367,11 +371,11 @@ class Reporter:
         if ci_run_url:
             report_payload["url"] = ci_run_url
 
-        disable_upload: bool = session.config.getoption("flakiness_disable_upload")
+        disable_upload: bool = self.config.disable_upload
 
         if not disable_upload:
-            token = session.config.getoption("flakiness_access_token") or None
-            endpoint = session.config.getoption("flakiness_endpoint")
+            token = self.config.access_token or None
+            endpoint = self.config.endpoint
 
             # If no access token, attempt GitHub OIDC authentication
             github_oidc = GithubOIDC.init_from_env()
@@ -395,7 +399,7 @@ class Reporter:
                     report_payload, list(self.file_attachments.values()), endpoint, token
                 )
 
-        output_dir: str | None = session.config.getoption("flakiness_output_dir")
+        output_dir: str | None = self.config.output_dir
         if output_dir:
             _write_report(report_payload, self.file_attachments, Path(output_dir))
 

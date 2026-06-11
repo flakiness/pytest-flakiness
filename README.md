@@ -14,17 +14,27 @@ The official [Flakiness.io](https://flakiness.io) reporter for **pytest**.
 
 ## Installation
 
-Install using **uv** (recommended):
+1. Install using **uv** (recommended):
 
-```bash
-uv add --dev pytest-flakiness
-```
+   ```bash
+   uv add --dev pytest-flakiness
+   ```
 
-Or via standard pip:
+   Or via standard pip:
 
-```bash
-pip install pytest-flakiness
-```
+   ```bash
+   pip install pytest-flakiness
+   ```
+
+2. Set your Flakiness.io project identifier (`org/project`) in your pytest config:
+
+   ```toml
+   # pyproject.toml
+   [tool.pytest]
+   flakiness_project = "my-org/my-project"
+   ```
+
+   See [Project Configuration](#project-configuration) for other config file formats, or use the `--flakiness-project` flag / `FLAKINESS_PROJECT` env variable instead.
 
 ## Usage
 
@@ -47,7 +57,6 @@ flakiness show
 > flakiness-report/
 > ```
 
-
 If Flakiness Access Token is passed, then the reporter will upload the report to Flakiness.io.
 You will see a confirmation in your terminal summary:
 
@@ -58,6 +67,18 @@ PASSED [100%]
 ✅ [Flakiness] Report uploaded: https://flakiness.io/your_org/your_proj/run/1
 ==============================
 ```
+
+### Project Configuration
+
+Options that are stable across a project are best set once in your pytest config instead of being passed on every run. With pytest 9, add them to the `[tool.pytest]` table in `pyproject.toml`:
+
+```toml
+# pyproject.toml
+[tool.pytest]
+flakiness_project = "my-org/my-project"
+```
+
+The same keys work in `[pytest]` of `pytest.ini` / `tox.ini` / `setup.cfg`. See [All Configuration Options](#all-configuration-options) for the full list — CLI flags and `FLAKINESS_*` environment variables still override these per run.
 
 ## Uploading Reports to Flakiness.io
 
@@ -105,17 +126,54 @@ pytest --flakiness-access-token="flakiness-io-..."
 
 ### All Configuration Options
 
-All options can be set via environment variables or command-line flags:
+Each option can be set via a command-line flag, an environment variable, or an ini option (see [Ini File Configuration](#ini-file-configuration) below). When the same option is set in more than one place, the highest-priority source wins:
 
-| Flag | Environment Variable | Description |
-|------|---------------------|-------------|
-| `--flakiness-name` | `FLAKINESS_NAME` | Name for this environment. Defaults to `pytest` |
-| `--flakiness-title` | `FLAKINESS_TITLE` | Optional human-readable report title. Typically used to name a CI run, matrix shard, or other execution group |
-| `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | Local directory to save JSON report. Defaults to `flakiness-report` |
-| `--flakiness-project` | `FLAKINESS_PROJECT` | Flakiness.io project identifier (e.g. `org/project`). Required for GitHub OIDC authentication |
-| `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | Your Flakiness.io access token for upload |
-| `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | Flakiness.io service endpoint. Defaults to `https://flakiness.io` |
-| `--flakiness-disable-upload` | `FLAKINESS_DISABLE_UPLOAD` | Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory |
+> **CLI flag** > **environment variable** > **ini file** > **built-in default**
+
+| Flag | Environment Variable | Ini Option | Description |
+|------|---------------------|-----------|-------------|
+| `--flakiness-name` | `FLAKINESS_NAME` | `flakiness_name` | Name for this environment. Defaults to `pytest` |
+| `--flakiness-title` | `FLAKINESS_TITLE` | `flakiness_title` | Optional human-readable report title. Typically used to name a CI run, matrix shard, or other execution group |
+| `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | `flakiness_output_dir` | Local directory to save JSON report. Defaults to `flakiness-report` |
+| `--flakiness-project` | `FLAKINESS_PROJECT` | `flakiness_project` | Flakiness.io project identifier (e.g. `org/project`). Required for GitHub OIDC authentication |
+| `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | — | Your Flakiness.io access token for upload. Not available as an ini option, since ini files are usually committed to version control |
+| `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | `flakiness_endpoint` | Flakiness.io service endpoint. Defaults to `https://flakiness.io` |
+| `--flakiness-disable-upload` | `FLAKINESS_DISABLE_UPLOAD` | `flakiness_disable_upload` | Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory |
+| `--flakiness-commit-id` | `FLAKINESS_COMMIT_ID` | `flakiness_commit_id` | Commit ID of the repository under test. Defaults to the current git commit |
+| `--flakiness-git-root` | `FLAKINESS_GIT_ROOT` | `flakiness_git_root` | Root directory used to normalize all paths. Defaults to the git repository root |
+
+### Ini File Configuration
+
+Options can also be set in your pytest configuration file, which is handy for values that are stable across a project (such as `flakiness_project`). All of the ini option names above are recognized in any file pytest reads — `pytest.ini`, `tox.ini`, `setup.cfg`, or `pyproject.toml`.
+
+`pytest.ini` (or `tox.ini` / `setup.cfg` under `[pytest]`):
+
+```ini
+[pytest]
+flakiness_project = my-org/my-project
+flakiness_name = pytest
+flakiness_disable_upload = false
+```
+
+`pyproject.toml` — pytest 9 reads native TOML types from the `[tool.pytest]` table (recommended):
+
+```toml
+[tool.pytest]
+flakiness_project = "my-org/my-project"
+flakiness_name = "pytest"
+flakiness_disable_upload = false
+```
+
+If you target older pytest, or prefer the string-based ini format, use `[tool.pytest.ini_options]` instead (don't combine both tables — pytest errors if it sees them together):
+
+```toml
+[tool.pytest.ini_options]
+flakiness_project = "my-org/my-project"
+flakiness_name = "pytest"
+flakiness_disable_upload = "false"
+```
+
+> **Note:** The access token is intentionally **not** available as an ini option — keep secrets out of version-controlled config files and pass `--flakiness-access-token` or `FLAKINESS_ACCESS_TOKEN` instead.
 
 ### Custom Environment Data
 

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from pytest_flakiness.flakiness_report import FlakinessReport, FKTest
+from pytest_flakiness.options import resolve
 
 
 def generate_json(
@@ -8,6 +9,8 @@ def generate_json(
     str,
     subdirectory: str | None = None,
     extra_args: list[str] | None = None,
+    ini: str | None = None,
+    pyproject: str | None = None,
 ) -> FlakinessReport:
     # 1. Create a dummy test file so pytest has something to run
     if subdirectory:
@@ -15,6 +18,12 @@ def generate_json(
         pytester.makepyfile(**{f"{subdirectory}/test_file": str})
     else:
         pytester.makepyfile(str)
+
+    # 1b. Optionally write an ini config file so we can exercise ini-based options.
+    if ini is not None:
+        pytester.makeini(ini)
+    if pyproject is not None:
+        pytester.makepyprojecttoml(pyproject)
 
     # 2. Define the output directory name
     output_dir_name = "my_flake_report"
@@ -443,3 +452,129 @@ def test_title_not_set_by_default(pytester, monkeypatch):
     """,
     )
     assert "title" not in json
+
+
+def test_env_is_frozen_at_session_start(pytester, monkeypatch):
+    """Mutating a FLAKINESS_* env var *during* the test run must not change the
+    resolved config. It is snapshotted once, before any test executes, so the
+    report stays consistent with the configuration the session started with."""
+    monkeypatch.setenv("FLAKINESS_TITLE", "Original Title")
+    json = generate_json(
+        pytester,
+        """
+        import os
+
+        def test_mutates_env():
+            # A user test mutating the environment must not retroactively change
+            # which title (or endpoint/token/output dir) the reporter uses.
+            os.environ["FLAKINESS_TITLE"] = "Mutated Title"
+            assert True
+    """,
+    )
+    assert json.get("title") == "Original Title"
+
+
+def test_name_from_ini(pytester, monkeypatch):
+    """Test that flakiness_name can be set from an ini file."""
+    monkeypatch.delenv("FLAKINESS_NAME", raising=False)
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        ini="[pytest]\nflakiness_name = from-ini\n",
+    )
+    assert json["category"] == "from-ini"
+
+
+def test_title_from_ini(pytester, monkeypatch):
+    """Test that flakiness_title can be set from an ini file."""
+    monkeypatch.delenv("FLAKINESS_TITLE", raising=False)
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        ini="[pytest]\nflakiness_title = Title From Ini\n",
+    )
+    assert json.get("title") == "Title From Ini"
+
+
+def test_title_from_pyproject_ini_options(pytester, monkeypatch):
+    """flakiness_title can be set from the [tool.pytest.ini_options] table (ini-compat mode)."""
+    monkeypatch.delenv("FLAKINESS_TITLE", raising=False)
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        pyproject='[tool.pytest.ini_options]\nflakiness_title = "Title From Pyproject"\n',
+    )
+    assert json.get("title") == "Title From Pyproject"
+
+
+def test_config_from_pyproject_native_toml(pytester, monkeypatch):
+    """flakiness options can be set from the native [tool.pytest] table (pytest 9+)."""
+    monkeypatch.delenv("FLAKINESS_TITLE", raising=False)
+    monkeypatch.delenv("FLAKINESS_NAME", raising=False)
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        pyproject=(
+            "[tool.pytest]\n"
+            'flakiness_title = "Native TOML Title"\n'
+            'flakiness_name = "native-name"\n'
+        ),
+    )
+    assert json.get("title") == "Native TOML Title"
+    assert json["category"] == "native-name"
+
+
+def test_env_overrides_ini(pytester, monkeypatch):
+    """Test that the env variable wins over the ini file (CLI > env > ini > default)."""
+    monkeypatch.setenv("FLAKINESS_TITLE", "Title From Env")
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        ini="[pytest]\nflakiness_title = Title From Ini\n",
+    )
+    assert json.get("title") == "Title From Env"
+
+
+def test_cli_overrides_ini(pytester, monkeypatch):
+    """Test that the CLI flag wins over the ini file (CLI > env > ini > default)."""
+    monkeypatch.delenv("FLAKINESS_TITLE", raising=False)
+    json = generate_json(
+        pytester,
+        """
+        def test_dummy():
+            assert True
+    """,
+        extra_args=["--flakiness-title=Title From CLI"],
+        ini="[pytest]\nflakiness_title = Title From Ini\n",
+    )
+    assert json.get("title") == "Title From CLI"
+
+
+def test_disable_upload_from_ini(pytester, monkeypatch):
+    """The boolean flakiness_disable_upload option is honored from an ini file.
+
+    Whether the report was uploaded is not observable from the JSON report, so
+    this checks the resolved value directly. Also covers env > ini for booleans:
+    a 'false' env variable overrides an ini 'true'."""
+    monkeypatch.delenv("FLAKINESS_DISABLE_UPLOAD", raising=False)
+    pytester.makeini("[pytest]\nflakiness_disable_upload = true\n")
+    config = pytester.parseconfigure()
+    assert resolve(config, "flakiness_disable_upload") is True
+
+    monkeypatch.setenv("FLAKINESS_DISABLE_UPLOAD", "false")
+    assert resolve(config, "flakiness_disable_upload") is False

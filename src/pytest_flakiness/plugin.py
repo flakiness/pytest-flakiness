@@ -2,95 +2,27 @@ from typing import List
 
 import pytest
 
-from pathlib import Path
-from .git import get_git_commit, get_git_root
-
 # Import your types from the sibling file
 from .reporter import Reporter
 from .flakiness_report import Annotation
-import os
-
-
-def _parse_env_flag(name: str) -> bool:
-    return os.environ.get(name, "").strip().lower() in ("1", "true", "yes", "on")
+from .options import add_options, resolve_config
 
 
 @pytest.hookimpl(tryfirst=True)
 def pytest_sessionstart(session: pytest.Session) -> None:
     """Called when the test session begins."""
-    commit_id = session.config.getoption("flakiness_commit_id")
-    git_root = session.config.getoption("flakiness_git_root")
+    # Resolve the full configuration once, up front, so it stays stable for the
+    # whole session (in particular, before any test can mutate FLAKINESS_* env
+    # variables). The Reporter reads from this snapshot at session finish.
+    config = resolve_config(session.config)
 
-    if git_root and commit_id:
-        reporter = Reporter(commit_id, Path(git_root), session.config.rootpath)
+    if config.git_root and config.commit_id:
+        reporter = Reporter(config, session.config.rootpath)
         session.config.pluginmanager.register(reporter, name="flakiness_reporter")
 
 
 def pytest_addoption(parser):
-    group = parser.getgroup("flakiness")
-    group.addoption(
-        "--flakiness-output-dir",
-        action="store",
-        dest="flakiness_output_dir",
-        default=os.environ.get("FLAKINESS_OUTPUT_DIR", "flakiness-report"),
-        help="Directory to dump the raw JSON report instead of uploading to Flakiness.io. Can also be set via FLAKINESS_OUTPUT_DIR env variable. Defaults to the 'flakiness-report'.",
-    )
-    group.addoption(
-        "--flakiness-commit-id",
-        action="store",
-        dest="flakiness_commit_id",
-        default=os.environ.get("FLAKINESS_COMMIT_ID", get_git_commit()),
-        help="Commit ID of the repository under test. Can also be set via FLAKINESS_COMMIT_ID env variable. Defaults to current git commit.",
-    )
-    group.addoption(
-        "--flakiness-name",
-        action="store",
-        dest="flakiness_name",
-        default=os.environ.get("FLAKINESS_NAME", "pytest"),
-        help="Name for the Flakiness Report environment. Defaults to 'pytest'",
-    )
-    group.addoption(
-        "--flakiness-git-root",
-        action="store",
-        dest="flakiness_git_root",
-        default=os.environ.get("FLAKINESS_GIT_ROOT", get_git_root()),
-        help="The root directory to normalize all paths. Can also be set via FLAKINESS_GIT_ROOT env variable. Defaults to git repository root.",
-    )
-    group.addoption(
-        "--flakiness-title",
-        action="store",
-        dest="flakiness_title",
-        default=os.environ.get("FLAKINESS_TITLE"),
-        help="Optional human-readable report title. Typically used to name a CI run, matrix shard, or other execution group. Can also be set via FLAKINESS_TITLE env variable.",
-    )
-    group.addoption(
-        "--flakiness-project",
-        action="store",
-        dest="flakiness_project",
-        default=os.environ.get("FLAKINESS_PROJECT"),
-        help="Flakiness.io project identifier (e.g. 'org/project'). Required for GitHub OIDC authentication. Can also be set via FLAKINESS_PROJECT env variable.",
-    )
-    group.addoption(
-        "--flakiness-access-token",
-        action="store",
-        dest="flakiness_access_token",
-        default=os.environ.get("FLAKINESS_ACCESS_TOKEN"),
-        help="The Flakiness Access Token to upload report. Can also be set via FLAKINESS_ACCESS_TOKEN env variable.",
-    )
-    group.addoption(
-        "--flakiness-endpoint",
-        action="store",
-        dest="flakiness_endpoint",
-        default=os.environ.get("FLAKINESS_ENDPOINT", "https://flakiness.io"),
-        help="Flakiness.io service endpoint. Can also be set via FLAKINESS_ENDPOINT env variable. Defaults to https://flakiness.io",
-    )
-    group.addoption(
-        "--flakiness-disable-upload",
-        action="store_true",
-        dest="flakiness_disable_upload",
-        default=_parse_env_flag("FLAKINESS_DISABLE_UPLOAD"),
-        help="Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory. Can also be set via FLAKINESS_DISABLE_UPLOAD env variable.",
-    )
+    add_options(parser)
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
