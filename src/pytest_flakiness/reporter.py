@@ -38,6 +38,7 @@ from .flakiness_report import (
 
 from .uploader import FileAttachment, upload_report
 from .github_oidc import GithubOIDC
+from .gitlab_oidc import GitlabOIDC
 
 # This behaves like a string at runtime, but type checkers treat it as distinct
 NormalizedPath = NewType("NormalizedPath", str)
@@ -354,7 +355,9 @@ class Reporter:
             )
         except importlib.metadata.PackageNotFoundError:
             pass
-        report_payload["testRunner"] = TestRunner(name="pytest", version=pytest.__version__)
+        report_payload["testRunner"] = TestRunner(
+            name="pytest", version=pytest.__version__
+        )
         # `python_implementation()` returns 'CPython', 'PyPy', 'Jython', etc.
         report_payload["runtime"] = Runtime(
             name=platform.python_implementation().lower(),
@@ -377,26 +380,32 @@ class Reporter:
             token = self.config.access_token or None
             endpoint = self.config.endpoint
 
-            # If no access token, attempt GitHub OIDC authentication
-            github_oidc = GithubOIDC.init_from_env()
-            if token is None and github_oidc is not None:
+            # If no access token, attempt CI OIDC authentication. GitHub Actions is
+            # probed first: it mints tokens on demand, so it works with nothing declared
+            # in the workflow, while GitLab only has a token when the job asks for one
+            # in .gitlab-ci.yml.
+            oidc = GithubOIDC.init_from_env() or GitlabOIDC.init_from_env()
+            if token is None and oidc is not None:
                 if not flakiness_project:
                     is_ci = os.environ.get("CI")
                     if is_ci:
                         print(
-                            "\n[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for GitHub OIDC."
+                            f"\n[Flakiness] Warning: Skipping upload - `flakinessProject` is not configured for {oidc.name} OIDC."
                         )
                 else:
                     try:
-                        token = github_oidc.fetch_token(flakiness_project)
+                        token = oidc.fetch_token(flakiness_project)
                     except Exception as e:
                         print(
-                            f"\n[Flakiness] Error fetching GitHub OIDC token: {e}"
+                            f"\n[Flakiness] Error fetching {oidc.name} OIDC token: {e}"
                         )
 
             if token is not None:
                 upload_report(
-                    report_payload, list(self.file_attachments.values()), endpoint, token
+                    report_payload,
+                    list(self.file_attachments.values()),
+                    endpoint,
+                    token,
                 )
 
         output_dir: str | None = self.config.output_dir
