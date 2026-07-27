@@ -113,6 +113,26 @@ steps:
     run: pytest
 ```
 
+### GitLab CI/CD
+
+When running in GitLab CI/CD, the reporter can authenticate using a GitLab ID token — no access token needed.
+
+GitLab mints ID tokens when the job starts, rather than on demand like GitHub Actions, so the job must declare one named `FLAKINESS_ID_TOKEN` whose audience matches your project identifier:
+
+```yaml
+test:
+  id_tokens:
+    FLAKINESS_ID_TOKEN:
+      aud: my-org/my-project   # must match --flakiness-project
+  script:
+    - pytest --flakiness-project="my-org/my-project"
+```
+
+For this to work:
+1. The job must declare a `FLAKINESS_ID_TOKEN` ID token whose `aud` is your Flakiness.io project identifier (`org/project`).
+2. The `--flakiness-project` option (or `FLAKINESS_PROJECT` env variable) must be set to that same identifier.
+3. The Flakiness.io project must be bound to the GitLab project that runs the pipeline.
+
 ### Access Token
 
 Alternatively, you can authenticate using your project's **Access Token**. You can find this in your project settings on [flakiness.io](https://flakiness.io).
@@ -135,7 +155,7 @@ Each option can be set via a command-line flag, an environment variable, or an i
 | `--flakiness-name` | `FLAKINESS_NAME` | `flakiness_name` | Name for this environment. Defaults to `pytest` |
 | `--flakiness-title` | `FLAKINESS_TITLE` | `flakiness_title` | Optional human-readable report title. Typically used to name a CI run, matrix shard, or other execution group |
 | `--flakiness-output-dir` | `FLAKINESS_OUTPUT_DIR` | `flakiness_output_dir` | Local directory to save JSON report. Defaults to `flakiness-report` |
-| `--flakiness-project` | `FLAKINESS_PROJECT` | `flakiness_project` | Flakiness.io project identifier (e.g. `org/project`). Required for GitHub OIDC authentication |
+| `--flakiness-project` | `FLAKINESS_PROJECT` | `flakiness_project` | Flakiness.io project identifier (e.g. `org/project`). Required for CI OIDC authentication (GitHub Actions, GitLab CI/CD) |
 | `--flakiness-access-token` | `FLAKINESS_ACCESS_TOKEN` | — | Your Flakiness.io access token for upload. Not available as an ini option, since ini files are usually committed to version control |
 | `--flakiness-endpoint` | `FLAKINESS_ENDPOINT` | `flakiness_endpoint` | Flakiness.io service endpoint. Defaults to `https://flakiness.io` |
 | `--flakiness-disable-upload` | `FLAKINESS_DISABLE_UPLOAD` | `flakiness_disable_upload` | Disable uploading the report to Flakiness.io. The JSON report is still written to the output directory |
@@ -217,6 +237,29 @@ Alternatively, using an access token:
   env:
     FLAKINESS_ACCESS_TOKEN: ${{ secrets.FLAKINESS_ACCESS_TOKEN }}
   run: pytest
+```
+
+## CI/CD Example (GitLab CI/CD)
+
+Using a GitLab ID token (recommended — no secrets needed):
+
+```yaml
+test:
+  id_tokens:
+    FLAKINESS_ID_TOKEN:
+      aud: my-org/my-project
+  script:
+    - pytest --flakiness-project="my-org/my-project"
+```
+
+Alternatively, using an access token stored as a masked CI/CD variable:
+
+```yaml
+test:
+  script:
+    - pytest
+  variables:
+    FLAKINESS_ACCESS_TOKEN: $FLAKINESS_ACCESS_TOKEN
 ```
 
 ## Contributing

@@ -9,6 +9,8 @@ from urllib3.util.retry import Retry
 class GithubOIDC:
     """Handles GitHub Actions OIDC token fetching for authentication with flakiness.io."""
 
+    name = "GitHub Actions"
+
     def __init__(self, request_url: str, request_token: str):
         self._request_url = request_url
         self._request_token = request_token
